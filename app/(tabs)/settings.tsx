@@ -95,33 +95,8 @@ export default function SettingsScreen() {
               Log Out
             </Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text className="text-white mb-2">Temperature Unit:</Text>
-      <View className="flex-row mb-4">
-        {["Celsius", "Fahrenheit", "Kelvin"].map((u) => (
-          <TouchableOpacity
-            key={u}
-            className={`flex-1 p-3 rounded-xl ${
-              unit === u ? "bg-blue-500" : "bg-gray-700"
-            } mr-2`}
-            onPress={() => {
-              setUnit(u);
-              saveSettings(theme, u);
-            }}
-          >
-            <Text className="text-center text-white">{u}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View className="bg-gray-800 p-3 rounded-xl">
-        <Text className="text-white text-sm">Settings (JSON):</Text>
-        <Text className="text-green-400 text-xs mt-2">
-          {JSON.stringify({ theme, unit }, null, 2)}
-        </Text>
-      </View>
-    </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

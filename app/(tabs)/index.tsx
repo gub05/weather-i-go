@@ -3,6 +3,11 @@ import { SafeAreaView, View, Text, TextInput, ScrollView, TouchableOpacity } fro
 import { FontAwesome, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Colors } from "@/constants/theme";
+import { Calendar } from 'react-native-calendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MultiSlider from '@ptomasroos/react-native-multi-slider';
+
+
 
 
 // Reusable component for the weather condition buttons
