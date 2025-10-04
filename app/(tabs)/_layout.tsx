@@ -18,7 +18,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="explore.tsx"
         options={{
           title: "Explore",
           tabBarIcon: ({ color }) => (
@@ -27,7 +27,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="events"
+        name="index"
         options={{
           title: "My Events",
           tabBarIcon: ({ color }) => (
