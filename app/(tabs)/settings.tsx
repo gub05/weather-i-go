@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   SafeAreaView,
   ScrollView,
@@ -6,24 +6,31 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
 
-// A reusable component for the toggle switches
-const ToggleSwitch = ({ label, options, selected, onSelect }) => (
+const ToggleSwitch = ({ label, options, selected, onSelect, textColor, tintColor }) => (
   <View className="flex-row items-center justify-between py-4">
-    <Text className="text-base text-gray-700">{label}</Text>
-    <View className="flex-row bg-gray-200 rounded-full p-1">
+    <Text style={{ color: textColor }} className="text-base">
+      {label}
+    </Text>
+    <View className="flex-row rounded-full p-1" style={{ backgroundColor: tintColor + "33" }}>
       {options.map((option) => (
         <TouchableOpacity
           key={option}
           onPress={() => onSelect(option)}
-          className={`px-4 py-1 rounded-full ${
-            selected === option ? "bg-white shadow" : ""
-          }`}
+          style={{
+            backgroundColor: selected === option ? tintColor : "transparent",
+            borderRadius: 9999,
+            paddingVertical: 6,
+            paddingHorizontal: 16,
+          }}
         >
           <Text
-            className={`font-bold ${
-              selected === option ? "text-blue-600" : "text-gray-500"
-            }`}
+            style={{
+              fontWeight: "bold",
+              color: selected === option ? Colors.light.background : textColor,
+            }}
           >
             {option}
           </Text>
@@ -34,57 +41,59 @@ const ToggleSwitch = ({ label, options, selected, onSelect }) => (
 );
 
 export default function SettingsScreen() {
-  const [theme, setTheme] = useState("Light");
-  const [mapView, setMapView] = useState("3D");
-  const [tempUnit, setTempUnit] = useState("C");
-  const [recommendations, setRecommendations] = useState(true);
+  const { theme, preference, setThemePreference } = useColorScheme();
+  const colors = theme === "dark" ? Colors.dark : Colors.light;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="px-4 pt-5 mb-6">
-        <Text className="text-3xl font-bold text-gray-800">Settings</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 20, marginBottom: 24 }}>
+        <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.text }}>
+          Settings
+        </Text>
       </View>
-      <ScrollView className="px-4">
-        <View className="bg-white rounded-xl shadow-sm p-4 mb-4">
+
+      <ScrollView style={{ paddingHorizontal: 16 }}>
+        <View
+          style={{
+            backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 16,
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}
+        >
           <ToggleSwitch
             label="Display"
-            options={["Light", "Dark"]}
-            selected={theme}
-            onSelect={setTheme}
-          />
-          <View className="border-b border-gray-200" />
-          <ToggleSwitch
-            label="Map View"
-            options={["3D", "2D"]}
-            selected={mapView}
-            onSelect={setMapView}
-          />
-          <View className="border-b border-gray-200" />
-          <ToggleSwitch
-            label="Temperature Units"
-            options={["C", "F", "K"]}
-            selected={tempUnit}
-            onSelect={setTempUnit}
+            options={["Light", "Dark", "System"]}
+            selected={
+              preference === "light"
+                ? "Light"
+                : preference === "dark"
+                ? "Dark"
+                : "System"
+            }
+            onSelect={(val) => {
+              const selected =
+                val === "Light" ? "light" : val === "Dark" ? "dark" : "system";
+              setThemePreference(selected);
+            }}
+            textColor={colors.text}
+            tintColor={colors.tint}
           />
         </View>
 
-        <View className="bg-white rounded-xl shadow-sm p-4 mb-4">
-          <ToggleSwitch
-            label="Buy Recommendations"
-            options={["ON", "OFF"]}
-            selected={recommendations ? "ON" : "OFF"}
-            onSelect={(val) => setRecommendations(val === "ON")}
-          />
-        </View>
-
-        <View className="bg-white rounded-xl shadow-sm p-4">
-          <View className="py-3">
-            <Text className="text-base text-gray-700">Account</Text>
-            <Text className="text-sm text-gray-500">beth@gmail.com</Text>
-          </View>
-          <View className="border-b border-gray-200" />
+        <View
+          style={{
+            backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+            borderRadius: 16,
+            padding: 16,
+          }}
+        >
           <TouchableOpacity className="py-3 items-center">
-            <Text className="text-base text-red-500 font-bold">Log Out</Text>
+            <Text style={{ color: "#e63946", fontWeight: "bold", fontSize: 16 }}>
+              Log Out
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

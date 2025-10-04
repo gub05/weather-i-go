@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { FontAwesome, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
 
 // Reusable component for the weather condition buttons
 const WeatherIconButton = ({ icon, label, selected, onPress }) => (
