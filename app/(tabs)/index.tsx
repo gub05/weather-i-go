@@ -1,76 +1,151 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
-import { FontAwesome, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-
-// Reusable component for the weather condition buttons
-const WeatherIconButton = ({ icon, label, selected, onPress }) => (
-  <TouchableOpacity onPress={onPress} className={`flex-1 items-center p-2 rounded-lg mx-1 ${selected ? 'bg-blue-200' : 'bg-gray-100'}`}>
-    {icon}
-    <Text className="text-xs mt-1 text-gray-700">{label}</Text>
-  </TouchableOpacity>
-);
+import MultiSlider from "@ptomasroos/react-native-multi-slider";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState } from "react";
+import {
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Calendar } from "react-native-calendars";
 
 export default function ExploreScreen() {
-  const [condition, setCondition] = useState('Sunny');
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedWeather, setSelectedWeather] = useState("");
+  const [temperatureRange, setTemperatureRange] = useState([20, 30]);
+  const [location, setLocation] = useState("");
+
+  const userPreferences = {
+    id: Date.now(),
+    date: selectedDate,
+    weather: selectedWeather,
+    temperatureRange: temperatureRange,
+    location: location,
+  };
+
+  const exampleForecast = {
+    date: "2025-10-07",
+    weather: "Sunny",
+    temperature: 28,
+    location: "Los Angeles",
+  };
+
+  const comparePreferences = (prefs, forecast) => {
+    if (!prefs.date || !prefs.weather || !forecast) return null;
+
+    const match =
+      prefs.date === forecast.date &&
+      prefs.weather === forecast.weather &&
+      forecast.temperature >= prefs.temperatureRange[0] &&
+      forecast.temperature <= prefs.temperatureRange[1];
+
+    return match
+      ? "Weather matches your desired conditions!"
+      : "Weather does not match your chosen preferences.";
+  };
+
+  const saveEvent = async () => {
+    try {
+      const existing = await AsyncStorage.getItem("events");
+      const events = existing ? JSON.parse(existing) : [];
+      await AsyncStorage.setItem(
+        "events",
+        JSON.stringify([...events, userPreferences])
+      );
+      alert("Event saved successfully!");
+    } catch (error) {
+      console.error("Error saving event:", error);
+    }
+  };
+
+  const weatherOptions = [
+    "Sunny",
+    "Partly Cloudy",
+    "Cloudy",
+    "Rainy",
+    "Thunderstorm",
+    "Night",
+  ];
 
   return (
-    <View className="flex-1">
-      {/* Background Map Placeholder */}
-      <View className="absolute inset-0 bg-blue-300 items-center justify-center">
-        <FontAwesome5 name="globe-americas" size={150} color="rgba(255, 255, 255, 0.3)" />
-        <Text className="text-white/50 text-2xl font-bold mt-4">Map Interface</Text>
+    <ScrollView className="flex-1 bg-gray-900 p-4">
+      <Text className="text-white text-2xl font-bold mb-4">Explore</Text>
+
+      {/* Date Picker */}
+      <Text className="text-white mb-2">Select Date:</Text>
+      <Calendar
+        onDayPress={(day) => setSelectedDate(day.dateString)}
+        markedDates={{
+          [selectedDate]: {
+            selected: true,
+            marked: true,
+            selectedColor: "#3b82f6",
+          },
+        }}
+      />
+
+      {/* Weather Condition Buttons */}
+      <Text className="text-white mt-4 mb-2">Desired Weather:</Text>
+      <View className="flex-row flex-wrap gap-2">
+        {weatherOptions.map((option) => (
+          <TouchableOpacity
+            key={option}
+            className={`px-4 py-2 rounded-xl ${
+              selectedWeather === option ? "bg-blue-500" : "bg-gray-700"
+            }`}
+            onPress={() => setSelectedWeather(option)}
+          >
+            <Text className="text-white">{option}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* UI Overlay */}
-      <ScrollView contentContainerStyle={{ paddingTop: 60, paddingBottom: 20 }} className="p-4">
-        <View className="bg-white/95 rounded-2xl shadow-lg p-4 backdrop-blur-sm">
-          {/* Header */}
-          <Text className="text-center text-3xl font-bold text-gray-800 mb-2">
-            Weather I Go
-          </Text>
+      {/* Temperature Range Slider */}
+      <Text className="text-white mt-4 mb-2">
+        Select Temperature Range (°C):
+      </Text>
+      <View className="items-center">
+        <Text className="text-white mb-2">
+          {temperatureRange[0]}°C - {temperatureRange[1]}°C
+        </Text>
+        <MultiSlider
+          values={temperatureRange}
+          min={-20}
+          max={50}
+          step={1}
+          sliderLength={300}
+          onValuesChange={(values) => setTemperatureRange(values)}
+          selectedStyle={{ backgroundColor: "#3b82f6" }}
+          unselectedStyle={{ backgroundColor: "#374151" }}
+          markerStyle={{ backgroundColor: "#3b82f6" }}
+        />
+      </View>
 
-          {/* Search Bar */}
-          <View className="flex-row items-center bg-gray-100 rounded-full p-3 mb-4 border border-gray-200">
-            <FontAwesome name="search" size={16} color="gray" />
-            <TextInput
-              placeholder="Search location..."
-              className="flex-1 ml-3 text-base"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+      {/* Location Input */}
+      <Text className="text-white mt-4 mb-2">Search Location:</Text>
+      <TextInput
+        className="bg-gray-800 text-white p-3 rounded-xl"
+        placeholder="Enter location"
+        placeholderTextColor="#aaa"
+        value={location}
+        onChangeText={setLocation}
+      />
 
-          {/* Desired Condition */}
-          <View className="mb-4">
-            <Text className="font-bold text-lg text-gray-700 mb-2">Desired Condition</Text>
-            <View className="flex-row justify-around">
-              <WeatherIconButton
-                icon={<FontAwesome5 name="sun" size={24} color="#F59E0B" />}
-                label="Sunny" selected={condition === 'Sunny'} onPress={() => setCondition('Sunny')}
-              />
-              <WeatherIconButton
-                icon={<FontAwesome5 name="cloud" size={24} color="#6B7280" />}
-                label="Cloudy" selected={condition === 'Cloudy'} onPress={() => setCondition('Cloudy')}
-              />
-              <WeatherIconButton
-                icon={<FontAwesome5 name="cloud-showers-heavy" size={24} color="#3B82F6" />}
-                label="Rainy" selected={condition === 'Rainy'} onPress={() => setCondition('Rainy')}
-              />
-              <WeatherIconButton
-                icon={<MaterialCommunityIcons name="weather-night" size={24} color="#4B5563" />}
-                label="Night" selected={condition === 'Night'} onPress={() => setCondition('Night')}
-              />
-            </View>
-          </View>
+      {/* Placeholder for Map Integration */}
+      <View className="my-6 h-80 bg-gray-700 rounded-xl items-center justify-center">
+        <Text className="text-white text-center px-4">
+          Interactive Google Earth Map Integration Space Reserved
+        </Text>
+      </View>
 
-          {/* Temperature Slider */}
-          <View>
-            <Text className="font-bold text-lg text-gray-700 mb-2">Desired Temperature (°C)</Text>
-            <View className="h-12 bg-gray-100 border border-gray-200 rounded-lg items-center justify-center">
-              <Text className="text-gray-500">[Temperature Slider: 15°C - 25°C]</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </View>
+      {/* Save Button */}
+      <TouchableOpacity
+        className="bg-green-500 rounded-xl p-3 mb-10"
+        onPress={saveEvent}
+      >
+        <Text className="text-center text-white font-semibold">Save Event</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }

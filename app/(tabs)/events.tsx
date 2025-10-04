@@ -1,99 +1,77 @@
-import { FontAwesome } from "@expo/vector-icons";
-import React from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import { FlatList, Text, TouchableOpacity, View } from "react-native";
 
-// Mock data for events, now with a unique `id` for each item
-const events = [
-  {
-    id: "1",
-    name: "Calles Bday",
-    date: "Jan 27",
-    condition: "GOOD",
-    color: "bg-green-100",
-    textColor: "text-green-700",
-  },
-  {
-    id: "2",
-    name: "Hiking Trip",
-    date: "Jan 1",
-    condition: "UNFAVORABLE",
-    color: "bg-red-100",
-    textColor: "text-red-700",
-  },
-  {
-    id: "3",
-    name: "Pool Party",
-    date: "Jan 30",
-    condition: "UNFAVORABLE",
-    color: "bg-red-100",
-    textColor: "text-red-700",
-  },
-  {
-    id: "4",
-    name: "Beach Day",
-    date: "Feb 12",
-    condition: "GOOD",
-    color: "bg-green-100",
-    textColor: "text-green-700",
-  },
-];
+export default function EventsScreen() {
+  const [events, setEvents] = useState([]);
+  const [recentlyDeleted, setRecentlyDeleted] = useState([]);
 
-export default function MyEventsScreen() {
+  useEffect(() => {
+    const loadEvents = async () => {
+      const saved = await AsyncStorage.getItem("events");
+      if (saved) setEvents(JSON.parse(saved));
+    };
+    loadEvents();
+  }, []);
+
+  const handleDelete = async (id) => {
+    const eventToDelete = events.find((e) => e.id === id);
+    const updatedEvents = events.filter((e) => e.id !== id);
+    setEvents(updatedEvents);
+    setRecentlyDeleted([...recentlyDeleted, eventToDelete]);
+    await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
+  };
+
+  const handleRestore = async (id) => {
+    const eventToRestore = recentlyDeleted.find((e) => e.id === id);
+    const updatedDeleted = recentlyDeleted.filter((e) => e.id !== id);
+    const updatedEvents = [...events, eventToRestore];
+    setRecentlyDeleted(updatedDeleted);
+    setEvents(updatedEvents);
+    await AsyncStorage.setItem("events", JSON.stringify(updatedEvents));
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      <View className="px-4 pt-5">
-        <Text className="text-3xl font-bold text-gray-800">My Events</Text>
-        {/* Search Bar */}
-        <View className="flex-row items-center bg-white rounded-full p-3 my-4 border border-gray-200 shadow-sm">
-          <FontAwesome name="search" size={16} color="gray" />
-          <TextInput
-            placeholder="Search event..."
-            className="flex-1 ml-3 text-base"
-            placeholderTextColor="#9CA3AF"
-          />
-        </View>
+    <View className="flex-1 bg-gray-900 p-4">
+      <Text className="text-white text-2xl font-bold mb-4">My Events</Text>
 
-        {/* Sort Button */}
-        <View className="flex-row justify-end mb-4">
-          <TouchableOpacity className="bg-white border border-gray-200 rounded-full px-4 py-2 flex-row items-center">
-            <Text className="text-gray-700">Sort By: Recents</Text>
-            <FontAwesome
-              name="chevron-down"
-              size={12}
-              color="gray"
-              className="ml-2"
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView className="px-4">
-        {events.map((event) => (
-          <View
-            key={event.id} // Corrected: Using the unique event ID as the key
-            className="bg-white rounded-xl shadow-sm p-4 mb-3 flex-row justify-between items-center"
-          >
-            <View>
-              <Text className="text-lg font-bold text-gray-800">
-                {event.name}
-              </Text>
-              <Text className="text-sm text-gray-500">{event.date}</Text>
-            </View>
-            <View className={`px-3 py-1 rounded-full ${event.color}`}>
-              <Text className={`font-bold text-xs ${event.textColor}`}>
-                {event.condition}
-              </Text>
-            </View>
+      <FlatList
+        data={events}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View className="bg-gray-800 p-3 rounded-xl mb-3">
+            <Text className="text-white font-semibold">
+              {item.weather} - {item.date}
+            </Text>
+            <Text className="text-gray-400">{item.location}</Text>
+            <TouchableOpacity
+              className="bg-red-500 p-2 rounded-xl mt-2"
+              onPress={() => handleDelete(item.id)}
+            >
+              <Text className="text-white text-center">Delete</Text>
+            </TouchableOpacity>
           </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+        )}
+      />
+
+      <Text className="text-white text-xl mt-6 mb-2">Recently Deleted</Text>
+      <FlatList
+        data={recentlyDeleted}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <View className="bg-gray-700 p-3 rounded-xl mb-3">
+            <Text className="text-gray-300 font-semibold">
+              {item.weather} - {item.date}
+            </Text>
+            <TouchableOpacity
+              className="bg-blue-500 p-2 rounded-xl mt-2"
+              onPress={() => handleRestore(item.id)}
+            >
+              <Text className="text-white text-center">Restore</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      />
+    </View>
   );
 }
