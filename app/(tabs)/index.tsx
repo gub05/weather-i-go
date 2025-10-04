@@ -1,14 +1,17 @@
-import MultiSlider from "@ptomasroos/react-native-multi-slider";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useState } from "react";
-import {
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Calendar } from "react-native-calendars";
+import React, { useState } from 'react';
+import { SafeAreaView, View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { FontAwesome, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/theme";
+
+
+// Reusable component for the weather condition buttons
+const WeatherIconButton = ({ icon, label, selected, onPress }) => (
+  <TouchableOpacity onPress={onPress} className={`flex-1 items-center p-2 rounded-lg mx-1 ${selected ? 'bg-blue-200' : 'bg-gray-100'}`}>
+    {icon}
+    <Text className="text-xs mt-1 text-gray-700">{label}</Text>
+  </TouchableOpacity>
+);
 
 export default function ExploreScreen() {
   const [selectedDate, setSelectedDate] = useState(null);
