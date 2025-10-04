@@ -1,23 +1,71 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Switch, TextInput, Button, StyleSheet, Alert } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React from "react";
+import { View, Text, Button, StyleSheet } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export default function SettingsScreen() {
-    const [darkMode, setDarkMode] = useState(false);
-    const [notifications, setNotifications] = useState(true);
+  const { theme, preference, setThemePreference } = useColorScheme();
 
-    useEffect(() => {
+  return (
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme === "dark" ? "#000" : "#fff" },
+      ]}
+    >
+      <Text
+        style={[
+          styles.title,
+          { color: theme === "dark" ? "#fff" : "#000" },
+        ]}
+      >
+        Settings
+      </Text>
 
-        console.log("Settings screen loaded");
-    }, []);
+      <Text
+        style={[
+          styles.subtitle,
+          { color: theme === "dark" ? "#ccc" : "#333" },
+        ]}
+      >
+        Current theme: {preference.toUpperCase()}
+      </Text>
 
-    return (
-    <View style={{ flex: 1, padding: 20 }}>
-        <Text>Dark Mode: {darkMode ? "On" : "Off"}</Text>
-        <Switch value={darkMode} onValueChange={setDarkMode} /> 
-        <Text>Notifications: {notifications ? "On" : "Off"}</Text>
-        <Switch value={notifications} onValueChange={setNotifications} />
+      <View style={styles.buttonContainer}>
+        <Button title="Light Mode" onPress={() => setThemePreference("light")} />
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <Button title="Dark Mode" onPress={() => setThemePreference("dark")} />
+      </View>
+
+      <View style={styles.buttonContainer}>
+        <Button
+          title="Use System Default"
+          onPress={() => setThemePreference("system")}
+        />
+      </View>
     </View>
-    );
-    
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 18,
+    marginBottom: 30,
+  },
+  buttonContainer: {
+    width: "80%",
+    marginVertical: 8,
+  },
+});
