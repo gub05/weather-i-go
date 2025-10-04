@@ -1,98 +1,76 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { FontAwesome, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// Reusable component for the weather condition buttons
+const WeatherIconButton = ({ icon, label, selected, onPress }) => (
+  <TouchableOpacity onPress={onPress} className={`flex-1 items-center p-2 rounded-lg mx-1 ${selected ? 'bg-blue-200' : 'bg-gray-100'}`}>
+    {icon}
+    <Text className="text-xs mt-1 text-gray-700">{label}</Text>
+  </TouchableOpacity>
+);
 
-export default function HomeScreen() {
+export default function ExploreScreen() {
+  const [condition, setCondition] = useState('Sunny');
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View className="flex-1">
+      {/* Background Map Placeholder */}
+      <View className="absolute inset-0 bg-blue-300 items-center justify-center">
+        <FontAwesome5 name="globe-americas" size={150} color="rgba(255, 255, 255, 0.3)" />
+        <Text className="text-white/50 text-2xl font-bold mt-4">Map Interface</Text>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* UI Overlay */}
+      <ScrollView contentContainerStyle={{ paddingTop: 60, paddingBottom: 20 }} className="p-4">
+        <View className="bg-white/95 rounded-2xl shadow-lg p-4 backdrop-blur-sm">
+          {/* Header */}
+          <Text className="text-center text-3xl font-bold text-gray-800 mb-2">
+            Weather I Go
+          </Text>
+
+          {/* Search Bar */}
+          <View className="flex-row items-center bg-gray-100 rounded-full p-3 mb-4 border border-gray-200">
+            <FontAwesome name="search" size={16} color="gray" />
+            <TextInput
+              placeholder="Search location..."
+              className="flex-1 ml-3 text-base"
+              placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          {/* Desired Condition */}
+          <View className="mb-4">
+            <Text className="font-bold text-lg text-gray-700 mb-2">Desired Condition</Text>
+            <View className="flex-row justify-around">
+              <WeatherIconButton
+                icon={<FontAwesome5 name="sun" size={24} color="#F59E0B" />}
+                label="Sunny" selected={condition === 'Sunny'} onPress={() => setCondition('Sunny')}
+              />
+              <WeatherIconButton
+                icon={<FontAwesome5 name="cloud" size={24} color="#6B7280" />}
+                label="Cloudy" selected={condition === 'Cloudy'} onPress={() => setCondition('Cloudy')}
+              />
+              <WeatherIconButton
+                icon={<FontAwesome5 name="cloud-showers-heavy" size={24} color="#3B82F6" />}
+                label="Rainy" selected={condition === 'Rainy'} onPress={() => setCondition('Rainy')}
+              />
+              <WeatherIconButton
+                icon={<MaterialCommunityIcons name="weather-night" size={24} color="#4B5563" />}
+                label="Night" selected={condition === 'Night'} onPress={() => setCondition('Night')}
+              />
+            </View>
+          </View>
+
+          {/* Temperature Slider */}
+          <View>
+            <Text className="font-bold text-lg text-gray-700 mb-2">Desired Temperature (°C)</Text>
+            <View className="h-12 bg-gray-100 border border-gray-200 rounded-lg items-center justify-center">
+              <Text className="text-gray-500">[Temperature Slider: 15°C - 25°C]</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

@@ -1,1 +1,2 @@
-declare module '@google/earthengine';
+declare module "@google/earthengine";
+/// <reference types="nativewind/types" />
