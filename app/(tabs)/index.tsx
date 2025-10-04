@@ -53,19 +53,30 @@ export default function ExploreScreen() {
       : "Weather does not match your chosen preferences.";
   };
 
-  const saveEvent = async () => {
-    try {
-      const existing = await AsyncStorage.getItem("events");
-      const events = existing ? JSON.parse(existing) : [];
-      await AsyncStorage.setItem(
-        "events",
-        JSON.stringify([...events, userPreferences])
-      );
-      alert("Event saved successfully!");
-    } catch (error) {
-      console.error("Error saving event:", error);
-    }
-  };
+ const saveEvent = async () => {
+  try {
+    // 1. Save locally like before
+    const existing = await AsyncStorage.getItem("events");
+    const events = existing ? JSON.parse(existing) : [];
+    await AsyncStorage.setItem(
+      "events",
+      JSON.stringify([...events, userPreferences])
+    );
+
+    // 2. Call backend API with user preferences
+    const response = await fetch(
+      `http://localhost:5000/api/weather/explain?location=${location}&date=${selectedDate}&desiredTemp=${temperatureRange[1]}&desiredCondition=${selectedWeather}&desiredHumidity=70`
+    );
+
+    const data = await response.json();
+    console.log("Backend AI Response:", data);
+
+    alert("Event saved successfully with AI check!");
+  } catch (error) {
+    console.error("Error saving event:", error);
+  }
+};
+
 
   const weatherOptions = [
     "Sunny",
