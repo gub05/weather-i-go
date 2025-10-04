@@ -34,13 +34,3 @@ export async function compareForecasts(forecast1, forecast2) {
   return askGemini(prompt);
 }
 
-// // Test the function (this is OUTSIDE askGemini)
-explainWeather({  temperature: 100, condition: "sunny", humidity: 80}).then((explanation) => {
-  console.log("Weather explanation:", explanation);
-});
-compareForecasts(
-  { temperature: 100, condition: "sunny", humidity: 80 },
-  { temperature: 85, condition: "sunny", humidity: 70 }
-).then((comparison) => {
-  console.log("Forecast comparison:", comparison);
-});
