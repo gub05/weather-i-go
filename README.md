@@ -10,8 +10,6 @@ Weather-I-Go takes your **location**, **date**, and your **“perfect weather”
 2. Uses **AI** to explain the numbers in simple, friendly text so they’re easy to understand.  
 3. Compares the actual conditions to your “perfect weather,” letting you know right away whether the day matches what you’re hoping for.  
 
-_It’s like having a personal weather guide that speaks your language._  
-
 ## How we built it  
 - **Frontend:** React with Tailwind CSS for a clean and responsive design.  
 - **Backend:** Node.js + Express to connect the frontend with NASA data and AI services.  
