@@ -1,7 +1,5 @@
-# Weather-I-Go 🌦️  
-
-_Making weather simple, personal, and easy to understand._  
-
+# Weather-I-Go 
+ 
 ## Inspiration  
 Most weather apps only give you numbers like **temperature**, **humidity**, or **wind speed**. While that’s useful, it doesn’t always help you know what the day will _feel_ like or whether it matches your idea of good weather. We wanted to create something that explains the weather in **plain language** and tells you if it lines up with what you consider the perfect day. That’s where **Weather-I-Go** came from.  
 
@@ -20,4 +18,3 @@ _It’s like having a personal weather guide that speaks your language._
 - **Data:** NASA POWER API for weather parameters and Google Earth Engine for geospatial context.  
 - **AI:** Gemini to explain the weather in a way that feels clear and personal.  
 
-```javascript
