@@ -2,7 +2,7 @@
 // Optimized satellite map component for Android with memory management
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform, AppState } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform, AppState, PanResponder } from 'react-native';
 import { initializeSatelliteImagery, getSatelliteData } from '@/api/satelliteImagery';
 import { useTheme } from "@/context/theme-context";
 import { Colors } from "@/constants/theme";
@@ -104,12 +104,57 @@ export default function SatelliteMapAndroid({
   const [serviceStatus, setServiceStatus] = useState<string>('Initializing...');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [tempRegion, setTempRegion] = useState<Region | null>(null);
   
   // Memory and performance management
   const mapRef = useRef<any>(null);
   const rateLimiter = useRef(new RateLimiter());
   const mounted = useRef(true);
   const dataCache = useRef(new Map<string, any>());
+
+  // Pan responder for real-time visual feedback during dragging
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only start pan for movements larger than threshold to avoid conflicts with taps
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 || Math.abs(gestureState.dy) > 10;
+      },
+      onPanResponderGrant: (evt) => {
+        setIsDragging(true);
+        // Store current region as temp for real-time updates
+        setTempRegion(region);
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (!tempRegion) return;
+        
+        // Calculate movement based on gesture state
+        const { dx, dy } = gestureState;
+        
+        // Convert pixel movement to lat/lng delta with reduced sensitivity
+        const sensitivity = 0.0001; // Much smaller sensitivity for mobile
+        const latDelta = dy * sensitivity;
+        const lngDelta = -dx * sensitivity; // Negative to match natural movement
+        
+        // Apply movement immediately for smooth visual feedback
+        const newRegion = {
+          ...tempRegion,
+          latitude: Math.max(-85, Math.min(85, tempRegion.latitude + latDelta)),
+          longitude: Math.max(-180, Math.min(180, tempRegion.longitude + lngDelta)),
+        };
+        
+        // Update region in real-time for immediate visual feedback
+        setRegion(newRegion);
+      },
+      onPanResponderRelease: () => {
+        setTimeout(() => setIsDragging(false), 150);
+        setTempRegion(null);
+      },
+    })
+  ).current;
 
   // App state management for memory optimization
   useEffect(() => {
@@ -157,7 +202,7 @@ export default function SatelliteMapAndroid({
   };
 
   const handleMapPress = useCallback(async (event: any) => {
-    if (!mounted.current || isLoading) return;
+    if (!mounted.current || isLoading || isDragging) return; // Don't process taps during dragging
     
     const { latitude, longitude } = event.nativeEvent.coordinate;
     
@@ -417,44 +462,45 @@ export default function SatelliteMapAndroid({
         )}
       </View>
 
-      {/* Optimized Interactive Map */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        mapType={mapType}
-        region={region}
-        onRegionChangeComplete={handleRegionChangeComplete}
-        onPress={handleMapPress}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        showsCompass={true}
-        showsScale={true}
-        // Memory optimization settings
-        maxZoomLevel={18}
-        minZoomLevel={2}
-        loadingEnabled={true}
-        loadingIndicatorColor={colors.tint}
-        loadingBackgroundColor={theme === 'dark' ? '#1e1f20' : '#f5f5f5'}
-        moveOnMarkerPress={false}
-        pitchEnabled={false}
-        rotateEnabled={false}
-        // Performance optimizations for Android
-        toolbarEnabled={false}
-        cacheEnabled={true}
-        scrollEnabled={true}
-        zoomEnabled={true}
-        // Reduce memory usage - single log only
-        onMapReady={(() => {
-          let hasLogged = false;
-          return () => {
-            if (!hasLogged && __DEV__) {
-              hasLogged = true;
-              console.log('Android Map ready - optimized for performance');
-            }
-          };
-        })()}
-      >
+      {/* Optimized Interactive Map with Real-time Dragging */}
+      <View style={styles.map} {...panResponder.panHandlers}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFillObject}
+          provider={PROVIDER_GOOGLE}
+          mapType={mapType}
+          region={region}
+          onRegionChangeComplete={handleRegionChangeComplete}
+          onPress={handleMapPress}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          showsCompass={true}
+          showsScale={true}
+          // Memory optimization settings
+          maxZoomLevel={18}
+          minZoomLevel={2}
+          loadingEnabled={true}
+          loadingIndicatorColor={colors.tint}
+          loadingBackgroundColor={theme === 'dark' ? '#1e1f20' : '#f5f5f5'}
+          moveOnMarkerPress={false}
+          pitchEnabled={false}
+          rotateEnabled={false}
+          // Performance optimizations for Android
+          toolbarEnabled={false}
+          cacheEnabled={true}
+          scrollEnabled={!isDragging} // Disable scroll during pan gesture
+          zoomEnabled={!isDragging} // Disable zoom during pan gesture
+          // Reduce memory usage - single log only
+          onMapReady={(() => {
+            let hasLogged = false;
+            return () => {
+              if (!hasLogged && __DEV__) {
+                hasLogged = true;
+                console.log('Android Map ready - optimized for performance with real-time dragging');
+              }
+            };
+          })()}
+        >
         {selectedLocation && (
           <Marker
             coordinate={selectedLocation}
@@ -463,7 +509,8 @@ export default function SatelliteMapAndroid({
             pinColor="red"
           />
         )}
-      </MapView>
+        </MapView>
+      </View>
 
       {/* Enhanced Info Panel */}
       {satelliteData && (

@@ -92,8 +92,13 @@ const WebSatelliteMap = ({
   // Pan responder for proper drag handling
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only start pan for movements larger than threshold to avoid conflicts with clicks
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
       onPanResponderGrant: (evt) => {
         setIsDragging(true);
         const { locationX, locationY } = evt.nativeEvent;
@@ -103,20 +108,23 @@ const WebSatelliteMap = ({
         if (!lastPanPoint) return;
         
         const { dx, dy } = gestureState;
-        const rect = mapContainerRef.current?.getBoundingClientRect();
+        const rect = mapContainerRef.current?.getBoundingClientRect?.();
         if (!rect) return;
         
-        // Convert pixel movement to lat/lng movement
-        const latMovement = (dy / rect.height) * (180 / Math.pow(2, zoomLevel - 8));
-        const lngMovement = (dx / rect.width) * (360 / Math.pow(2, zoomLevel - 8));
+        // Reduced sensitivity for less sensitive dragging
+        const sensitivity = 0.4 / Math.pow(2, zoomLevel - 8);
+        const latMovement = (dy / rect.height) * 90 * sensitivity;
+        const lngMovement = (dx / rect.width) * 180 * sensitivity;
         
-        setWebMapCenter(prev => ({
-          lat: Math.max(-85, Math.min(85, prev.lat - latMovement)),
-          lng: prev.lng - lngMovement
-        }));
+        // Apply movement immediately for smooth visual feedback
+        setWebMapCenter(prev => {
+          const newLat = Math.max(-85, Math.min(85, prev.lat - latMovement));
+          const newLng = Math.max(-180, Math.min(180, prev.lng - lngMovement));
+          return { lat: newLat, lng: newLng };
+        });
       },
       onPanResponderRelease: () => {
-        setTimeout(() => setIsDragging(false), 100);
+        setTimeout(() => setIsDragging(false), 150);
         setLastPanPoint(null);
       },
     })
@@ -174,7 +182,7 @@ const WebSatelliteMap = ({
     return { lat, lng };
   };
 
-  // Get expanded tile grid for seamless display
+  // Get expanded tile grid for seamless display with improved coverage
   const getTilesForView = () => {
     const tiles: any[] = [];
     const centerTile = getTileCoordinates(webMapCenter.lat, webMapCenter.lng, zoomLevel);
@@ -184,8 +192,9 @@ const WebSatelliteMap = ({
     if (!mapContainerRef.current) return [];
     
     const mapRect = mapContainerRef.current.getBoundingClientRect();
-    const tilesX = Math.ceil(mapRect.width / tileSize) + 2;
-    const tilesY = Math.ceil(mapRect.height / tileSize) + 2;
+    // Increase tile coverage to ensure map is always visible
+    const tilesX = Math.ceil(mapRect.width / tileSize) + 4;
+    const tilesY = Math.ceil(mapRect.height / tileSize) + 4;
     
     const startX = Math.floor(-tilesX / 2);
     const endX = Math.ceil(tilesX / 2);
@@ -197,6 +206,7 @@ const WebSatelliteMap = ({
         const tileX = centerTile.x + dx;
         const tileY = centerTile.y + dy;
         
+        // Ensure tiles are within valid bounds
         if (tileX >= 0 && tileY >= 0 && tileX < Math.pow(2, zoomLevel) && tileY < Math.pow(2, zoomLevel)) {
           const currentLayer = mapLayers.find(l => l.id === mapType) || mapLayers[0];
           let tileUrl = currentLayer.url
@@ -216,7 +226,7 @@ const WebSatelliteMap = ({
             dy: dy,
             tileX: tileX,
             tileY: tileY,
-            key: `${tileX}-${tileY}-${zoomLevel}`
+            key: `${tileX}-${tileY}-${zoomLevel}-${mapType}`
           });
         }
       }
@@ -254,7 +264,7 @@ const WebSatelliteMap = ({
     }
   };
 
-  // Mouse event handlers for web
+  // Mouse event handlers for web with improved dragging
   const handleMouseDown = (event: any) => {
     if (Platform.OS !== 'web') return;
     setIsDragging(true);
@@ -270,21 +280,25 @@ const WebSatelliteMap = ({
     
     const rect = mapContainerRef.current.getBoundingClientRect();
     
-    // Convert pixel movement to lat/lng movement
-    const latMovement = (deltaY / rect.height) * (180 / Math.pow(2, zoomLevel - 8));
-    const lngMovement = (deltaX / rect.width) * (360 / Math.pow(2, zoomLevel - 8));
+    // Reduced sensitivity for less sensitive dragging
+    const sensitivity = 0.3 / Math.pow(2, zoomLevel - 8);
     
-    setWebMapCenter(prev => ({
-      lat: Math.max(-85, Math.min(85, prev.lat - latMovement)),
-      lng: prev.lng - lngMovement
-    }));
+    const latMovement = (deltaY / rect.height) * 90 * sensitivity;
+    const lngMovement = (deltaX / rect.width) * 180 * sensitivity;
+    
+    // Apply movement with immediate state update for smooth dragging
+    setWebMapCenter(prev => {
+      const newLat = Math.max(-85, Math.min(85, prev.lat - latMovement));
+      const newLng = Math.max(-180, Math.min(180, prev.lng - lngMovement));
+      return { lat: newLat, lng: newLng };
+    });
     
     setLastPanPoint({ x: event.clientX, y: event.clientY });
   };
 
   const handleMouseUp = () => {
     if (Platform.OS !== 'web') return;
-    setTimeout(() => setIsDragging(false), 100);
+    setTimeout(() => setIsDragging(false), 150);
     setLastPanPoint(null);
   };
 
@@ -331,26 +345,73 @@ const WebSatelliteMap = ({
 
       {/* Web Map Controls */}
       <View style={[styles.controls, { backgroundColor: theme === 'dark' ? '#1e1f20' : '#f5f5f5', borderBottomColor: theme === 'dark' ? '#555' : '#ddd' }]}>
-        <TouchableOpacity style={[styles.controlButton, { backgroundColor: colors.tint }]} onPress={toggleMapType}>
-          <Text style={styles.controlButtonText}>
+        <TouchableOpacity
+          style={[
+            styles.controlButton,
+            {
+              backgroundColor: colors.tint,
+              minWidth: 120,
+              paddingHorizontal: 12
+            }
+          ]}
+          onPress={toggleMapType}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.controlButtonText, { fontSize: 13 }]}>
             {mapLayers.find(l => l.id === mapType)?.name || '🛰️ Satellite'}
           </Text>
         </TouchableOpacity>
         
         <View style={styles.zoomControls}>
           <TouchableOpacity
-            style={[styles.zoomButton, { backgroundColor: theme === 'dark' ? '#2b2b2b' : '#fff' }]}
+            style={[
+              styles.zoomButton,
+              {
+                backgroundColor: theme === 'dark' ? '#2b2b2b' : '#fff',
+                borderWidth: 1,
+                borderColor: theme === 'dark' ? '#555' : '#ddd'
+              }
+            ]}
             onPress={() => setZoomLevel(Math.min(18, zoomLevel + 1))}
+            activeOpacity={0.7}
           >
             <Text style={[styles.zoomButtonText, { color: colors.text }]}>+</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.zoomButton, { backgroundColor: theme === 'dark' ? '#2b2b2b' : '#fff' }]}
-            onPress={() => setZoomLevel(Math.max(2, zoomLevel - 1))}
+            style={[
+              styles.zoomButton,
+              {
+                backgroundColor: theme === 'dark' ? '#2b2b2b' : '#fff',
+                borderWidth: 1,
+                borderColor: theme === 'dark' ? '#555' : '#ddd'
+              }
+            ]}
+            onPress={() => setZoomLevel(Math.max(3, zoomLevel - 1))}
+            activeOpacity={0.7}
           >
             <Text style={[styles.zoomButtonText, { color: colors.text }]}>-</Text>
           </TouchableOpacity>
         </View>
+        
+        <TouchableOpacity
+          style={[
+            styles.controlButton,
+            {
+              backgroundColor: theme === 'dark' ? '#444' : '#ddd',
+              marginLeft: 10,
+              minWidth: 44,
+              borderWidth: 1,
+              borderColor: theme === 'dark' ? '#555' : '#bbb'
+            }
+          ]}
+          onPress={() => {
+            setWebMapCenter({ lat: 37.7749, lng: -122.4194 });
+            setZoomLevel(8);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.controlButtonText, { color: colors.text, fontSize: 16 }]}>🏠</Text>
+        </TouchableOpacity>
         
         {selectedLocation && (
           <View style={styles.locationInfo}>
@@ -398,15 +459,21 @@ const WebSatelliteMap = ({
                 source={{ uri: tile.url }}
                 style={{
                   width: '100%',
-                  height: '100%'
+                  height: '100%',
+                  backgroundColor: theme === 'dark' ? '#2a2a2a' : '#f0f0f0'
                 }}
                 resizeMode="cover"
+                onLoad={() => {
+                  // Tile loaded successfully
+                }}
                 onError={() => {
                   // Fallback handled by React Native Image component
                   if (__DEV__) {
                     console.warn('Failed to load tile:', tile.url);
                   }
                 }}
+                defaultSource={undefined}
+                fadeDuration={0}
               />
               </View>
             );
@@ -420,6 +487,9 @@ const WebSatelliteMap = ({
           </Text>
           <Text style={[styles.mapInstructions, { color: theme === 'dark' ? '#ccc' : '#666' }]}>
             Click to pin • Drag to pan • Zoom: {zoomLevel}
+          </Text>
+          <Text style={[styles.mapInstructions, { color: theme === 'dark' ? '#ccc' : '#666', fontSize: 12 }]}>
+            Lat: {webMapCenter.lat.toFixed(4)}, Lng: {webMapCenter.lng.toFixed(4)}
           </Text>
         </View>
 
@@ -435,7 +505,7 @@ const WebSatelliteMap = ({
           </View>
         )}
 
-        {/* Selected location marker */}
+        {/* Selected location marker with logo */}
         {selectedLocation && (() => {
           const mapRect = mapContainerRef.current?.getBoundingClientRect?.();
           if (!mapRect) return null;
@@ -446,9 +516,13 @@ const WebSatelliteMap = ({
             <View key="location-marker" style={[styles.locationMarker, {
               left: pixel.x,
               top: pixel.y,
-              backgroundColor: colors.tint
+              backgroundColor: 'transparent'
             }]}>
-              <Text style={styles.markerText}>📍</Text>
+              <Image
+                source={require('@/assets/images/logo.png')}
+                style={styles.markerLogo}
+                resizeMode="contain"
+              />
             </View>
           );
         })()}
@@ -517,13 +591,16 @@ const WebSatelliteMap = ({
           {'\u2022'} Click on the map to select a location
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
-          {'\u2022'} Drag to pan around the map
+          {'\u2022'} Drag to pan around the map (smooth movement)
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
           {'\u2022'} Use zoom controls to change detail level
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
           {'\u2022'} Switch between satellite, terrain, and street views
+        </Text>
+        <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
+          {'\u2022'} Use 🏠 button to return to default location
         </Text>
       </View>
     </View>
@@ -1037,6 +1114,9 @@ const styles = StyleSheet.create({
   },
   mapTile: {
     position: 'absolute',
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'transparent',
   },
   mapOverlayInfo: {
     position: 'absolute',
@@ -1093,6 +1173,10 @@ const styles = StyleSheet.create({
   },
   markerText: {
     fontSize: 16,
+  },
+  markerLogo: {
+    width: 30,
+    height: 30,
   },
   mapInfo: {
     margin: 20,
