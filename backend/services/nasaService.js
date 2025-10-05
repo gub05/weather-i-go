@@ -33,8 +33,8 @@ const WIND_PARAM = "WS2M";    // Daily Mean 2 Meter Wind Speed
  * Clean invalid NASA values (-999)
  */
 
-const cleanValue = (val)  => value !== null && value !== underfined
-? parseFloat(value).toFixed(2)
+const cleanValue = (val) => val !== null && val !== undefined && val !== -999
+? parseFloat(val).toFixed(2)
 : null;
 // function sanitize(val) {
 //   return val === undefined || val === null || val === -999 || val === "-999"
@@ -43,12 +43,58 @@ const cleanValue = (val)  => value !== null && value !== underfined
 // }
 
 /**
+ * Geocoding function for NASA service
+ */
+async function geologicalLocation(locationName) {
+  console.log(`🌍 Geocoding location for NASA: ${locationName}`);
+  
+  // Check for obviously invalid locations (single characters, very short strings, etc.)
+  if (!locationName || locationName.trim().length < 2 || /^[a-zA-Z]$/.test(locationName.trim())) {
+    throw new Error(`Location "${locationName}" is not a valid place name. Please enter a real city, country, or location.`);
+  }
+  
+  try {
+    const encodedLocation = encodeURIComponent(locationName);
+    const geocodingUrl = `https://nominatim.openstreetmap.org/search?q=${encodedLocation}&format=json&limit=1`;
+    
+    const response = await fetch(geocodingUrl, {
+      headers: {
+        'User-Agent': 'WeatherApp/1.0'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const result = data[0];
+      const coords = {
+        lat: parseFloat(result.lat),
+        lon: parseFloat(result.lon)
+      };
+      
+      console.log(`✅ Found coordinates for ${locationName}:`, coords);
+      return coords;
+    } else {
+      throw new Error(`Sorry, I couldn't find "${locationName}". Please check the spelling and try a different location.`);
+    }
+    
+  } catch (error) {
+    console.error(`❌ Geocoding error for ${locationName}:`, error.message);
+    throw error;
+  }
+}
+
+/**
  * Fetch data from NASA POWER API for a given date and parameters
  */
 async function fetchNasaData(lat, lon, date, parameters) {
   const nasaDate = date.replace(/-/g, "");
 
-  const url = `${BASE_URL}latitude=${lat}&Longitude=${long}&startDate=${nasaDate}&sendData=${nasaDate}&parameter=${parameters}&communit=AG&format=JSON`;
+  const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&startDate=${nasaDate}&endDate=${nasaDate}&parameters=${parameters}&community=AG&format=JSON`;
   //const url = `${NASA_POWER_BASE_URL}latitude=${lat}&longitude=${lon}&start_date=${nasaDate}&end_date=${nasaDate}&parameters=${parameters}&community=AG&format=JSON`;
   // url.searchParams.append("latitude", lat);
   // url.searchParams.append("longitude", lon);
@@ -76,11 +122,17 @@ async function fetchNasaData(lat, lon, date, parameters) {
   //   throw new Error("Could not retrieve data from NASA service.");
   // }
 
+  console.log(`🌤️ Fetching NASA URL: ${url}`);
+  
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Meteomatics API error: Status ${response.status}`);
+    throw new Error(`NASA API error: Status ${response.status}`);
   }
-  return (await response.json()).properties;
+  
+  const data = await response.json();
+  console.log(`📊 NASA data received:`, JSON.stringify(data).slice(0, 200));
+  
+  return data.properties || data;
 }
 
 
@@ -124,7 +176,7 @@ export async function getTemperature(locationName, date) {
 
   const dailyData = rawData?.parameter?.[TEMP_PARAM];
   const dateKey = date.replace(/-/g, "");
-  const avgTemperature = sanitize(dailyData?.[dateKey]);
+  const avgTemperature = cleanValue(dailyData?.[dateKey]);
 
   return {
     temperatureC: avgTemperature,
@@ -142,7 +194,7 @@ export async function getRainfall(locationName, date) {
 
   const dailyData = rawData?.parameter?.[RAIN_PARAM];
   const dateKey = date.replace(/-/g, "");
-  const totalRainfall = sanitize(dailyData?.[dateKey]);
+  const totalRainfall = cleanValue(dailyData?.[dateKey]);
 
   return {
     rainfall: totalRainfall,
@@ -160,7 +212,7 @@ export async function getWindSpeed(locationName, date) {
 
   const dailyData = rawData?.parameter?.[WIND_PARAM];
   const dateKey = date.replace(/-/g, "");
-  const avgWindSpeed = sanitize(dailyData?.[dateKey]);
+  const avgWindSpeed = cleanValue(dailyData?.[dateKey]);
 
   return {
     windspeed: avgWindSpeed,

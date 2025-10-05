@@ -57,8 +57,18 @@ const colors =
   const checkFavorability = async () => {
     setLoading(true);
     try {
+      // Check if location is provided
+      if (!location || location.trim() === "") {
+        setFavorabilityResult({ 
+          aiExplanation: "Please enter a location to get weather analysis! 🌍",
+          aiComparison: null 
+        });
+        setLoading(false);
+        return;
+      }
+
       const params = new URLSearchParams({
-        location: location || "San Francisco",
+        location: location,
         date: selectedDate || new Date().toISOString().split('T')[0],
         desiredTemp: temperatureRange[0].toString(),
         desiredCondition: selectedWeather || "sunny",
@@ -71,7 +81,7 @@ const colors =
     } catch (error) {
       console.error('Error checking favorability:', error);
       setFavorabilityResult({ 
-        aiExplanation: "Error connecting to backend. Please try again.",
+        aiExplanation: "Oops! Something went wrong. Please check your connection and try again. 🔄",
         aiComparison: null 
       });
     } finally {
@@ -248,6 +258,22 @@ const colors =
           onChangeText={setName}
         />
 
+        {/* Location Input */}
+        <TextInput
+          style={{
+            backgroundColor: theme === "dark" ? "#2b2b2b" : "#f0f0f0",
+            color: colors.text,
+            padding: 12,
+            borderRadius: 12,
+            width: "85%",
+            marginBottom: 16,
+          }}
+          placeholder="Enter location (e.g., Paris, New York)..."
+          placeholderTextColor={theme === "dark" ? "#888" : "#999"}
+          value={location}
+          onChangeText={setLocation}
+        />
+
         {/* Select Date Button */}
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
@@ -417,8 +443,8 @@ const colors =
         </TouchableOpacity>
       </View>
 
-      {/* Selected Location Display */}
-      {selectedLocation && (
+      {/* Location Display */}
+      {(location || selectedLocation) && (
         <View
           style={{
             width: "90%",
@@ -445,12 +471,21 @@ const colors =
           <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, marginBottom: 8 }}>
             📍 Selected Location
           </Text>
-          <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
-            Latitude: {selectedLocation.latitude.toFixed(4)}
-          </Text>
-          <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
-            Longitude: {selectedLocation.longitude.toFixed(4)}
-          </Text>
+          {location && (
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "600", marginBottom: 4 }}>
+              {location}
+            </Text>
+          )}
+          {selectedLocation && (
+            <>
+              <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
+                Latitude: {selectedLocation.latitude.toFixed(4)}
+              </Text>
+              <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
+                Longitude: {selectedLocation.longitude.toFixed(4)}
+              </Text>
+            </>
+          )}
         </View>
       )}
 
@@ -587,7 +622,7 @@ const colors =
                     fontSize: 16,
                   }}
                 >
-                  Checking favorability...
+                  🌤️ Checking weather favorability...
                 </Text>
               </>
             ) : (
@@ -610,7 +645,7 @@ const colors =
                     paddingHorizontal: 16,
                   }}
                 >
-                  {favorabilityResult?.aiExplanation || "Loading weather analysis..."}
+                  {favorabilityResult?.aiExplanation || "🌤️ Analyzing weather conditions for you..."}
                 </Text>
                 {favorabilityResult?.aiComparison && (
                   <Text

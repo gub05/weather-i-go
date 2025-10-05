@@ -20,19 +20,20 @@ export async function askGemini(prompt) {
 
 //function to explain weather data using Gemini
 export async function explainWeather(weatherData) {
-  const prompt = `Explain the following weather data in simple, clean text without markdown formatting, bullet points, or special characters. Just use plain text with periods and commas: ${JSON.stringify(weatherData)}`;
+  const prompt = `Hey! I'm looking at the weather forecast and wanted to give you a friendly heads up about what to expect. Here's what I found: ${JSON.stringify(weatherData)}
+
+Please explain this weather data in a warm, friendly tone like you're talking to a friend. Be conversational and encouraging. Don't use bullet points or formal language - just chat about the weather like you would with someone you care about. Mention the temperature, conditions, and what this means for their plans.`;
   return askGemini(prompt);
 }
 
 //function to compare two weather forecasts using Gemini
 export async function compareForecasts(forecast1, forecast2) {
-  const prompt = `Compare the user's desired weather with the actual weather. Write in simple, clean text without markdown formatting, bullet points, asterisks, or special characters.
-Forecast 1 is the user's desired weather conditions and forecast 2 is the actual weather conditions.
-Compare the two forecasts and explain the differences in simple terms for a user and explain whether it's compatible or not. It should
-be readable and user friendly and not too technical and not too long, short and simple but friendly.
+  const prompt = `Hey there! I wanted to chat with you about your weather expectations versus what's actually happening. 
 
-User's desired weather: ${JSON.stringify(forecast1)}
-Actual weather: ${JSON.stringify(forecast2)}`;
+You were hoping for: ${JSON.stringify(forecast1)}
+But the forecast shows: ${JSON.stringify(forecast2)}
+
+Please compare these in a friendly, conversational way like you're talking to a friend. Use phrases like "You were expecting this, but actually..." or "Good news!" or "Unfortunately..." or "The good thing is..." Be encouraging and helpful. Explain if their plans will work out or if they might want to adjust. Keep it warm and personal, like you're genuinely concerned about their day.`;
   return askGemini(prompt);
 }
 
