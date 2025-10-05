@@ -122,7 +122,14 @@ export default function EventsScreen() {
       />
 
       {/* Sort Dropdown */}
-      <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
+      <View
+        style={{
+          alignItems: "flex-end",
+          marginBottom: 10,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
         <TouchableOpacity
           onPress={() => setDropdownVisible(!dropdownVisible)}
           style={styles.sortButton}
@@ -133,10 +140,7 @@ export default function EventsScreen() {
         </TouchableOpacity>
 
         {dropdownVisible && (
-          <View
-            style={styles.dropdownWrapper}
-            pointerEvents="box-none"
-          >
+          <View style={styles.dropdownWrapper} pointerEvents="box-none">
             <View style={styles.dropdown}>
               {["Name", "Date", "Favorability"].map((option) => (
                 <TouchableOpacity
@@ -200,21 +204,18 @@ const styles = StyleSheet.create({
   },
   sortText: { fontWeight: "600" },
   dropdownWrapper: {
-    position: "relative",
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  dropdown: {
     position: "absolute",
     top: 40,
     right: 0,
+    zIndex: 9999,
+    elevation: 10,
+  },
+  dropdown: {
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 10,
     padding: 8,
-    zIndex: 9999,
-    elevation: 10,
     shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 4,
