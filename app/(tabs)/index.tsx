@@ -283,7 +283,8 @@ const colors =
             fontSize: 18,
             fontWeight: "600",
             color: colors.text,
-            alignSelf: "flex-start",
+            textAlign: "center",
+            //alignSelf: "flex-start",
             marginBottom: 8,
           }}
         >
@@ -341,7 +342,8 @@ const colors =
             fontSize: 18,
             fontWeight: "600",
             color: colors.text,
-            alignSelf: "flex-start",
+            textAlign: "center",
+            //alignSelf: "flex-start",
             marginBottom: 8,
           }}
         >
