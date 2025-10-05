@@ -68,7 +68,11 @@
 
     "express": "^5.1.0",
 
+<<<<<<< Updated upstream
     "node-fetch": "^3.3.2",
+=======
+    "firebase": "^12.3.0",
+>>>>>>> Stashed changes
 
     "react": "19.1.0",
 
