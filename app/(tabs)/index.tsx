@@ -9,10 +9,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Dimensions,
+  Platform,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useTheme } from "@/context/theme-context";
 import { Colors } from "@/constants/theme";
+import SatelliteMap from "@/components/satellite-map";
 
 export default function ExploreScreen() {
   const { theme } = useTheme();
@@ -26,6 +29,8 @@ export default function ExploreScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [favorModal, setFavorModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -72,6 +77,15 @@ export default function ExploreScreen() {
     setTimeout(() => setLoading(false), 1500);
   };
 
+  const handleLocationSelect = (latitude, longitude) => {
+    setSelectedLocation({ latitude, longitude });
+  };
+
+  const getSelectedDateObject = () => {
+    if (!selectedDate) return new Date();
+    return new Date(selectedDate);
+  };
+
   const weatherOptions = [
     { label: "Sunny", icon: "☀️" },
     { label: "Partly Cloudy", icon: "🌤️" },
@@ -82,10 +96,73 @@ export default function ExploreScreen() {
   ];
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Toggle Button */}
+      <View style={{
+        flexDirection: "row",
+        backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderBottomWidth: 1,
+        borderBottomColor: theme === "dark" ? "#555" : "#e0e0e0",
+      }}>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            marginHorizontal: 5,
+            backgroundColor: !showMap ? colors.tint : (theme === "dark" ? "#2b2b2b" : "#f5f5f5"),
+            borderRadius: 8,
+            alignItems: "center",
+          }}
+          onPress={() => setShowMap(false)}
+        >
+          <Text style={{
+            fontSize: 16,
+            fontWeight: "600",
+            color: !showMap ? colors.background : (theme === "dark" ? "#aaa" : "#666"),
+          }}>
+            🎛️ Controls
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: 20,
+            marginHorizontal: 5,
+            backgroundColor: showMap ? colors.tint : (theme === "dark" ? "#2b2b2b" : "#f5f5f5"),
+            borderRadius: 8,
+            alignItems: "center",
+          }}
+          onPress={() => setShowMap(true)}
+        >
+          <Text style={{
+            fontSize: 16,
+            fontWeight: "600",
+            color: showMap ? colors.background : (theme === "dark" ? "#aaa" : "#666"),
+          }}>
+            🛰️ Satellite Map
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showMap ? (
+        // Satellite Map View
+        <SatelliteMap
+          onLocationSelect={handleLocationSelect}
+          selectedDate={getSelectedDateObject()}
+          weatherCondition={selectedWeather}
+          tempRange={{ min: temperatureRange[0], max: temperatureRange[1] }}
+        />
+      ) : (
+        // Main Controls View
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
+        >
       {/* Main card */}
       <View
         style={{
@@ -94,9 +171,19 @@ export default function ExploreScreen() {
           padding: 16,
           borderRadius: 24,
           backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
-          shadowColor: "#000",
-          shadowOpacity: 0.1,
-          shadowRadius: 6,
+          ...Platform.select({
+            ios: {
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowRadius: 6,
+            },
+            android: {
+              elevation: 6,
+            },
+            web: {
+              boxShadow: "0px 0px 6px rgba(0, 0, 0, 0.1)",
+            },
+          }),
           alignItems: "center",
         }}
       >
@@ -294,25 +381,42 @@ export default function ExploreScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Map placeholder */}
-      <View
-        style={{
-          height: 300,
-          width: "90%",
-          marginTop: 24,
-          borderRadius: 24,
-          backgroundColor: theme === "dark" ? "#2b2b2b" : "#e0f2fe",
-          justifyContent: "center",
-          alignItems: "center",
-          borderWidth: 1,
-          borderColor: theme === "dark" ? "#555" : "#60a5fa",
-          borderStyle: "dashed",
-        }}
-      >
-        <Text style={{ color: colors.text, textAlign: "center" }}>
-          [Map Interface Placeholder]
-        </Text>
-      </View>
+      {/* Selected Location Display */}
+      {selectedLocation && (
+        <View
+          style={{
+            width: "90%",
+            marginTop: 16,
+            padding: 16,
+            borderRadius: 16,
+            backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 6,
+              },
+              android: {
+                elevation: 6,
+              },
+              web: {
+                boxShadow: "0px 0px 6px rgba(0, 0, 0, 0.1)",
+              },
+            }),
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.text, marginBottom: 8 }}>
+            📍 Selected Location
+          </Text>
+          <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
+            Latitude: {selectedLocation.latitude.toFixed(4)}
+          </Text>
+          <Text style={{ color: theme === "dark" ? "#aaa" : "#666" }}>
+            Longitude: {selectedLocation.longitude.toFixed(4)}
+          </Text>
+        </View>
+      )}
 
       {/* Date Picker Modal (unchanged) */}
       <Modal
@@ -321,9 +425,39 @@ export default function ExploreScreen() {
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View className="flex-1 bg-black/50 justify-center items-center">
-          <View className="bg-white rounded-3xl p-5 w-80 shadow-lg items-center">
-            <Text className="text-lg font-semibold mb-3 text-gray-900">
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: theme === 'dark' ? '#1e1f20' : 'white',
+            borderRadius: 24,
+            padding: 20,
+            width: 320,
+            ...Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 8,
+              },
+              web: {
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
+              },
+            }),
+            alignItems: 'center'
+          }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '600',
+              marginBottom: 12,
+              color: colors.text
+            }}>
               Select a Date
             </Text>
             <Calendar
@@ -333,25 +467,41 @@ export default function ExploreScreen() {
                 width: 300,
               }}
               theme={{
-                backgroundColor: "#fff",
-                calendarBackground: "#fff",
-                todayTextColor: "#2563eb",
-                arrowColor: "#2563eb",
+                backgroundColor: theme === 'dark' ? '#1e1f20' : '#fff',
+                calendarBackground: theme === 'dark' ? '#1e1f20' : '#fff',
+                textSectionTitleColor: colors.text,
+                selectedDayBackgroundColor: colors.tint,
+                selectedDayTextColor: colors.background,
+                todayTextColor: colors.tint,
+                dayTextColor: colors.text,
+                textDisabledColor: theme === 'dark' ? '#555' : '#ccc',
+                arrowColor: colors.tint,
+                monthTextColor: colors.text,
+                indicatorColor: colors.tint,
               }}
               onDayPress={(day) => setSelectedDate(day.dateString)}
               markedDates={{
                 [selectedDate]: {
                   selected: true,
                   marked: true,
-                  selectedColor: "#2563eb",
+                  selectedColor: colors.tint,
                 },
               }}
             />
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
-              className="mt-4 bg-blue-500 rounded-xl px-5 py-2"
+              style={{
+                marginTop: 16,
+                backgroundColor: colors.tint,
+                borderRadius: 12,
+                paddingHorizontal: 20,
+                paddingVertical: 8
+              }}
             >
-              <Text className="text-white font-semibold">Done</Text>
+              <Text style={{
+                color: colors.background,
+                fontWeight: '600'
+              }}>Done</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -364,16 +514,33 @@ export default function ExploreScreen() {
         animationType="fade"
         onRequestClose={() => setFavorModal(false)}
       >
-        <View className="flex-1 bg-black/40 justify-center items-center">
-          <View
-            style={{
-              backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
-              borderRadius: 24,
-              padding: 24,
-              width: 320,
-              alignItems: "center",
-            }}
-          >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+            borderRadius: 24,
+            padding: 24,
+            width: 320,
+            alignItems: "center",
+            ...Platform.select({
+              ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+              },
+              android: {
+                elevation: 8,
+              },
+              web: {
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
+              },
+            }),
+          }}>
             {loading ? (
               <>
                 <ActivityIndicator size="large" color={colors.tint} />
@@ -431,6 +598,8 @@ export default function ExploreScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+        </ScrollView>
+      )}
+    </View>
   );
 }
