@@ -26,11 +26,12 @@ export const Colors = {
     tabIconSelected: tintColorDark,
   },
   system: {
-    text:'#FAF3DD',
-    tint: tintColorLight,
-    background: '#b8f2e6',
-    tabIconDefault: '#FFA69E',
-    tabIconSelected: '#5E6472',
+    text:'#0081a7',
+    tint: '#FFA69E',
+    icon: '#f07167',
+    background: '#00afb9',
+    tabIconDefault: '#fdfcdc',
+    tabIconSelected: '#fed9b7',
   },
 };
 
