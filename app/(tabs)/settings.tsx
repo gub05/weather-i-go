@@ -58,10 +58,11 @@ const handleThemeChange = (selectedTheme: "light" | "dark" | "system") => {
     >
       <Text
         style={{
-          fontSize: 28,
+          fontSize: 45,
           fontWeight: "bold",
           color: colors.text,
           marginBottom: 24,
+          textAlign: "center",
         }}
       >
         ⚙️ Settings

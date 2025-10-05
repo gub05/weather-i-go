@@ -282,7 +282,7 @@ const colors =
       >
         <Text
           style={{
-            fontSize: 24,
+            fontSize: 45,
             fontWeight: "bold",
             marginBottom: 16,
             color: colors.text,

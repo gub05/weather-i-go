@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   title: {
-    fontSize: 28,
+    fontSize: 45,
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 20,
