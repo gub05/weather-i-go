@@ -463,7 +463,7 @@ const colors =
           <Text
             style={{
               textAlign: "center",
-              color: colors.text,
+              color: "#333",
               fontWeight: "600",
             }}
           >
