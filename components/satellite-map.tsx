@@ -124,7 +124,7 @@ const WebSatelliteMap = ({
         });
       },
       onPanResponderRelease: () => {
-        setTimeout(() => setIsDragging(false), 150);
+        setTimeout(() => setIsDragging(false), 50); // Reduced timeout for faster reset
         setLastPanPoint(null);
       },
     })
@@ -235,32 +235,39 @@ const WebSatelliteMap = ({
   };
 
   const handleWebMapClick = async (event: any) => {
-    if (isDragging) return; // Don't process clicks if we were dragging
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    // Fix pin placement accuracy by using more precise coordinate calculation
-    const { lat: clickLat, lng: clickLng } = pixelToLatLng(x, y, rect);
-    
-    // Round coordinates to prevent floating point precision issues
-    const roundedLat = Math.round(clickLat * 10000) / 10000;
-    const roundedLng = Math.round(clickLng * 10000) / 10000;
-    
-    setSelectedLocation({ latitude: roundedLat, longitude: roundedLng });
-    
-    if (onLocationSelect) {
-      onLocationSelect(roundedLat, roundedLng);
-    }
-
-    // Get satellite data for this location
     try {
-      const { getSatelliteData } = await import('@/api/satelliteImagery');
-      const data = await getSatelliteData(roundedLat, roundedLng, selectedDate);
-      setSatelliteData(data);
+      // Reset dragging state immediately on click to prevent false positives
+      if (isDragging) {
+        setIsDragging(false);
+      }
+      
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      // Fix pin placement accuracy by using more precise coordinate calculation
+      const { lat: clickLat, lng: clickLng } = pixelToLatLng(x, y, rect);
+      
+      // Round coordinates to prevent floating point precision issues
+      const roundedLat = Math.round(clickLat * 10000) / 10000;
+      const roundedLng = Math.round(clickLng * 10000) / 10000;
+      
+      setSelectedLocation({ latitude: roundedLat, longitude: roundedLng });
+      
+      if (onLocationSelect) {
+        await onLocationSelect(roundedLat, roundedLng);
+      }
+
+      // Get satellite data for this location
+      try {
+        const { getSatelliteData } = await import('@/api/satelliteImagery');
+        const data = await getSatelliteData(roundedLat, roundedLng, selectedDate);
+        setSatelliteData(data);
+      } catch (error) {
+        console.error('Error getting satellite data:', error);
+      }
     } catch (error) {
-      console.error('Error getting satellite data:', error);
+      console.error('Error in handleWebMapClick:', error);
     }
   };
 
@@ -298,7 +305,7 @@ const WebSatelliteMap = ({
 
   const handleMouseUp = () => {
     if (Platform.OS !== 'web') return;
-    setTimeout(() => setIsDragging(false), 150);
+    setTimeout(() => setIsDragging(false), 50); // Reduced timeout for faster reset
     setLastPanPoint(null);
   };
 

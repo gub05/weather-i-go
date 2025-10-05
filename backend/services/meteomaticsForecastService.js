@@ -2,10 +2,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Configure dotenv to look for .env in the parent directory
+// Configure dotenv to look for .env in the root directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const envPath = path.join(__dirname, '../../../.env');
+const envPath = path.join(__dirname, '../../.env');
 dotenv.config({ path: envPath });
 import fetch from "node-fetch";
 

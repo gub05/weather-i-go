@@ -1,6 +1,14 @@
 // ai.js
 import dotenv from "dotenv";
-dotenv.config({ path: "./.env" }); 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Configure dotenv to look for .env in the root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.join(__dirname, '../.env');
+dotenv.config({ path: envPath });
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Create Gemini client with your API key
@@ -8,7 +16,8 @@ const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function askGemini(prompt) {
   try {
-    const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    // Try the stable model instead of experimental one
+    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
     const response = await model.generateContent(prompt);
 
     return response.response.text();

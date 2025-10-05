@@ -121,8 +121,57 @@ const colors =
     checkFavorability();
   };
 
-  const handleLocationSelect = (latitude, longitude) => {
+  // Reverse geocoding function to convert coordinates to city name
+  const reverseGeocode = async (latitude, longitude) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'WeatherApp/1.0'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Geocoding API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.address) {
+        // Try to get the most specific location name available
+        const city = data.address.city ||
+                    data.address.town ||
+                    data.address.village ||
+                    data.address.county ||
+                    data.address.state ||
+                    data.address.country ||
+                    'Unknown Location';
+        
+        const country = data.address.country;
+        return country && city !== country ? `${city}, ${country}` : city;
+      }
+      
+      return 'Unknown Location';
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+      return `Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`;
+    }
+  };
+
+  const handleLocationSelect = async (latitude, longitude) => {
     setSelectedLocation({ latitude, longitude });
+    
+    // Perform reverse geocoding to get city name
+    try {
+      const cityName = await reverseGeocode(latitude, longitude);
+      setLocation(cityName);
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      // Fallback to coordinates if reverse geocoding fails
+      setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+    }
   };
 
   const getSelectedDateObject = () => {
