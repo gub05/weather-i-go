@@ -6,8 +6,13 @@ import { Colors } from "@/constants/theme";
 
 export default function EventsScreen() {
   const { theme } = useTheme();
-  const colors = theme === "dark" ? Colors.dark : Colors.light;
-
+const colors =
+    theme === "dark"
+      ? Colors.dark
+      : theme === "system"
+      ? Colors.system
+      : Colors.light;
+      
   const [events, setEvents] = useState([]);
   const [recentlyDeleted, setRecentlyDeleted] = useState([]);
 

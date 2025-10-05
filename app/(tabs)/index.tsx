@@ -19,8 +19,13 @@ import SatelliteMap from "@/components/satellite-map";
 
 export default function ExploreScreen() {
   const { theme } = useTheme();
-  const colors = theme === "dark" ? Colors.dark : Colors.light;
-
+const colors =
+    theme === "dark"
+      ? Colors.dark
+      : theme === "system"
+      ? Colors.system
+      : Colors.light;
+      
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedWeather, setSelectedWeather] = useState("");
   const [temperatureRange, setTemperatureRange] = useState([20, 30]);
