@@ -141,7 +141,7 @@ export default function EventsScreen() {
           },
         ]}
       >
-        <Text style={[styles.title, { color: textColor }]}>Weather I Go</Text>
+        <Text style={[styles.title, { color: textColor }]}>My Events</Text>
 
         {/* Search Input */}
         <TextInput
