@@ -118,7 +118,7 @@ const handleThemeChange = (selectedTheme: "light" | "dark" | "system") => {
       </View>
 
       {/* TEMPERATURE UNIT */}
-      <View
+     <View
         style={{
           backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
           padding: 16,
