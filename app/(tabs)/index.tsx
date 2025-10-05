@@ -11,8 +11,13 @@ import {
   View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { useTheme } from "@/context/theme-context";
+import { Colors } from "@/constants/theme";
 
 export default function ExploreScreen() {
+  const { theme } = useTheme();
+  const colors = theme === "dark" ? Colors.dark : Colors.light;
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedWeather, setSelectedWeather] = useState("");
   const [temperatureRange, setTemperatureRange] = useState([20, 30]);
@@ -33,12 +38,10 @@ export default function ExploreScreen() {
     loadSettings();
   }, []);
 
-  // Conversion helpers
   const convertCelsius = (v, toUnit) =>
     toUnit === "F" ? (v * 9) / 5 + 32 : toUnit === "K" ? v + 273.15 : v;
   const displayValue = (v) => `${convertCelsius(v, unit).toFixed(1)}°${unit}`;
 
-  // Save Event
   const saveEvent = async () => {
     try {
       const existing = await AsyncStorage.getItem("events");
@@ -63,7 +66,6 @@ export default function ExploreScreen() {
     }
   };
 
-  // Simulate favorability check (placeholder)
   const handleCalculate = () => {
     setFavorModal(true);
     setLoading(true);
@@ -81,66 +83,130 @@ export default function ExploreScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-blue-200"
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ alignItems: "center", paddingBottom: 40 }}
     >
       {/* Main card */}
-      <View className="w-11/12 mt-6 p-4 bg-white rounded-3xl shadow-lg items-center">
-        <Text className="text-2xl font-bold mb-4 text-gray-900">
+      <View
+        style={{
+          width: "90%",
+          marginTop: 24,
+          padding: 16,
+          borderRadius: 24,
+          backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowRadius: 6,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "bold",
+            marginBottom: 16,
+            color: colors.text,
+          }}
+        >
           Weather I Go
         </Text>
 
-        {/* Location search */}
+        {/* Location Input */}
         <TextInput
-          className="bg-gray-100 p-3 rounded-xl mb-4 w-10/12 text-gray-700"
+          style={{
+            backgroundColor: theme === "dark" ? "#2b2b2b" : "#f0f0f0",
+            color: colors.text,
+            padding: 12,
+            borderRadius: 12,
+            width: "85%",
+            marginBottom: 16,
+          }}
           placeholder="Search location..."
+          placeholderTextColor={theme === "dark" ? "#888" : "#999"}
           value={location}
           onChangeText={setLocation}
         />
 
-        {/* Select Date button */}
+        {/* Select Date Button */}
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
-          className={`rounded-2xl p-3 mb-2 w-3/4 ${
-            selectedDate ? "bg-blue-500" : "bg-gray-200"
-          }`}
+          style={{
+            backgroundColor: selectedDate ? colors.tint : "#ccc",
+            borderRadius: 16,
+            padding: 12,
+            width: "75%",
+            marginBottom: 8,
+          }}
         >
           <Text
-            className={`text-center font-semibold ${
-              selectedDate ? "text-white" : "text-gray-700"
-            }`}
+            style={{
+              textAlign: "center",
+              fontWeight: "600",
+              color: selectedDate ? colors.background : "#333",
+            }}
           >
             📅 Select Date
           </Text>
         </TouchableOpacity>
+
         {selectedDate && (
-          <Text className="text-gray-700 mb-3">
-            Selected Date: <Text className="font-semibold">{selectedDate}</Text>
+          <Text style={{ color: colors.text, marginBottom: 12 }}>
+            Selected Date:{" "}
+            <Text style={{ fontWeight: "600" }}>{selectedDate}</Text>
           </Text>
         )}
 
-        {/* Weather buttons */}
-        <Text className="text-lg font-semibold text-gray-800 mb-2 self-start">
+        {/* Weather Buttons */}
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "600",
+            color: colors.text,
+            alignSelf: "flex-start",
+            marginBottom: 8,
+          }}
+        >
           Desired Condition
         </Text>
-        <View className="flex-row flex-wrap justify-center mb-4">
+
+        <View
+          style={{
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            marginBottom: 16,
+          }}
+        >
           {weatherOptions.map((option) => (
             <TouchableOpacity
               key={option.label}
               onPress={() => setSelectedWeather(option.label)}
-              className={`w-[30%] m-1 p-3 rounded-2xl items-center ${
-                selectedWeather === option.label
-                  ? "bg-blue-100 border border-blue-500"
-                  : "bg-gray-100"
-              }`}
-            >
-              <Text className="text-2xl">{option.icon}</Text>
-              <Text
-                className={`mt-1 font-semibold ${
+              style={{
+                width: "30%",
+                margin: 6,
+                padding: 10,
+                borderRadius: 16,
+                alignItems: "center",
+                backgroundColor:
                   selectedWeather === option.label
-                    ? "text-blue-600"
-                    : "text-gray-700"
-                }`}
+                    ? colors.tint + "22"
+                    : theme === "dark"
+                    ? "#2a2a2a"
+                    : "#f0f0f0",
+                borderWidth: selectedWeather === option.label ? 2 : 0,
+                borderColor: selectedWeather === option.label ? colors.tint : "transparent",
+              }}
+            >
+              <Text style={{ fontSize: 22 }}>{option.icon}</Text>
+              <Text
+                style={{
+                  marginTop: 4,
+                  fontWeight: "600",
+                  color:
+                    selectedWeather === option.label
+                      ? colors.tint
+                      : colors.text,
+                }}
               >
                 {option.label}
               </Text>
@@ -148,12 +214,21 @@ export default function ExploreScreen() {
           ))}
         </View>
 
-        {/* Temperature slider */}
-        <Text className="text-lg font-semibold text-gray-800 mb-2 self-start">
+        {/* Temperature Slider */}
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "600",
+            color: colors.text,
+            alignSelf: "flex-start",
+            marginBottom: 8,
+          }}
+        >
           Desired Temperature ({unit})
         </Text>
-        <View className="items-center w-full mb-6">
-          <Text className="text-gray-700 mb-2">
+
+        <View style={{ alignItems: "center", width: "100%", marginBottom: 24 }}>
+          <Text style={{ color: colors.text, marginBottom: 8 }}>
             {displayValue(temperatureRange[0])} -{" "}
             {displayValue(temperatureRange[1])}
           </Text>
@@ -164,10 +239,12 @@ export default function ExploreScreen() {
             step={1}
             sliderLength={280}
             onValuesChange={setTemperatureRange}
-            selectedStyle={{ backgroundColor: "#2563eb" }}
-            unselectedStyle={{ backgroundColor: "#cbd5e1" }}
+            selectedStyle={{ backgroundColor: colors.tint }}
+            unselectedStyle={{
+              backgroundColor: theme === "dark" ? "#555" : "#ccc",
+            }}
             markerStyle={{
-              backgroundColor: "#2563eb",
+              backgroundColor: colors.tint,
               height: 20,
               width: 20,
             }}
@@ -175,34 +252,69 @@ export default function ExploreScreen() {
         </View>
 
         {/* Buttons */}
-        <View className="flex items-center w-full mt-2">
-          <TouchableOpacity
-            onPress={saveEvent}
-            className="bg-blue-500 rounded-2xl p-3 w-3/4 mb-3"
+        <TouchableOpacity
+          onPress={saveEvent}
+          style={{
+            backgroundColor: colors.tint,
+            borderRadius: 16,
+            padding: 12,
+            width: "75%",
+            marginBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              textAlign: "center",
+              color: colors.background,
+              fontWeight: "600",
+            }}
           >
-            <Text className="text-center text-white font-semibold">
-              Save Event
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleCalculate}
-            className="bg-gray-200 rounded-2xl p-3 w-3/4"
+            Save Event
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleCalculate}
+          style={{
+            backgroundColor: theme === "dark" ? "#444" : "#ddd",
+            borderRadius: 16,
+            padding: 12,
+            width: "75%",
+          }}
+        >
+          <Text
+            style={{
+              textAlign: "center",
+              color: colors.text,
+              fontWeight: "600",
+            }}
           >
-            <Text className="text-center text-gray-700 font-semibold">
-              Calculate Favorability
-            </Text>
-          </TouchableOpacity>
-        </View>
+            Calculate Favorability
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Map placeholder */}
-      <View className="h-80 bg-blue-100 w-11/12 mt-6 rounded-3xl items-center justify-center border border-dashed border-blue-400">
-        <Text className="text-gray-700 text-center">
+      <View
+        style={{
+          height: 300,
+          width: "90%",
+          marginTop: 24,
+          borderRadius: 24,
+          backgroundColor: theme === "dark" ? "#2b2b2b" : "#e0f2fe",
+          justifyContent: "center",
+          alignItems: "center",
+          borderWidth: 1,
+          borderColor: theme === "dark" ? "#555" : "#60a5fa",
+          borderStyle: "dashed",
+        }}
+      >
+        <Text style={{ color: colors.text, textAlign: "center" }}>
           [Map Interface Placeholder]
         </Text>
       </View>
 
-      {/* Date Picker Modal */}
+      {/* Date Picker Modal (unchanged) */}
       <Modal
         transparent
         visible={modalVisible}
@@ -253,27 +365,66 @@ export default function ExploreScreen() {
         onRequestClose={() => setFavorModal(false)}
       >
         <View className="flex-1 bg-black/40 justify-center items-center">
-          <View className="bg-white rounded-3xl p-6 w-80 shadow-lg items-center">
+          <View
+            style={{
+              backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
+              borderRadius: 24,
+              padding: 24,
+              width: 320,
+              alignItems: "center",
+            }}
+          >
             {loading ? (
               <>
-                <ActivityIndicator size="large" color="#2563eb" />
-                <Text className="text-gray-700 mt-3">
+                <ActivityIndicator size="large" color={colors.tint} />
+                <Text
+                  style={{
+                    color: colors.text,
+                    marginTop: 12,
+                    fontSize: 16,
+                  }}
+                >
                   Checking favorability...
                 </Text>
               </>
             ) : (
               <>
-                <Text className="text-xl font-bold text-gray-800 mb-2">
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    color: colors.text,
+                    marginBottom: 8,
+                  }}
+                >
                   Favorability Result
                 </Text>
-                <Text className="text-gray-600 mb-4 text-center">
+                <Text
+                  style={{
+                    color: theme === "dark" ? "#aaa" : "#555",
+                    textAlign: "center",
+                    marginBottom: 16,
+                  }}
+                >
                   Your friend’s backend will send the calculated result here.
                 </Text>
                 <TouchableOpacity
                   onPress={() => setFavorModal(false)}
-                  className="bg-blue-500 rounded-xl px-4 py-2"
+                  style={{
+                    backgroundColor: colors.tint,
+                    borderRadius: 12,
+                    paddingVertical: 8,
+                    paddingHorizontal: 16,
+                  }}
                 >
-                  <Text className="text-white font-semibold">Close</Text>
+                  <Text
+                    style={{
+                      color: colors.background,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Close
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
