@@ -25,7 +25,7 @@ const colors =
       : theme === "system"
       ? Colors.system
       : Colors.light;
-      
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedWeather, setSelectedWeather] = useState("");
   const [temperatureRange, setTemperatureRange] = useState([20, 30]);
@@ -130,7 +130,7 @@ const colors =
           <Text style={{
             fontSize: 16,
             fontWeight: "600",
-            color: !showMap ? colors.background : (theme === "dark" ? "#aaa" : "#666"),
+            color: !showMap ? colors.text : (theme === "dark" ? "#aaa" : "#666"),
           }}>
             🎛️ Controls
           </Text>
@@ -151,7 +151,7 @@ const colors =
           <Text style={{
             fontSize: 16,
             fontWeight: "600",
-            color: showMap ? colors.background : (theme === "dark" ? "#aaa" : "#666"),
+            color: showMap ? colors.text : (theme === "dark" ? "#aaa" : "#666"),
           }}>
             🛰️ Satellite Map
           </Text>
@@ -361,7 +361,7 @@ const colors =
           <Text
             style={{
               textAlign: "center",
-              color: colors.background,
+              color: colors.text,
               fontWeight: "600",
             }}
           >
