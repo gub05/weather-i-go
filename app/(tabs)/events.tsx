@@ -12,9 +12,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getDb } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { useTheme } from "@/context/theme-context";
+import { Colors } from "@/constants/theme";
+
 
 export default function EventsScreen() {
-  const { theme, colors } = useTheme();
+  const { theme } = useTheme();
+  const colors =
+      theme === "dark"
+        ? Colors.dark
+        : theme === "system"
+        ? Colors.system
+        : Colors.light;
+  
 
   const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
