@@ -1,52 +1,35 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// backend/nasaService.js
+// Configure dotenv to look for .env in the root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const envPath = path.join(__dirname, '../../.env');
+dotenv.config({ path: envPath });
+
 import fetch from "node-fetch"; // <--- ensures fetch works in Node
-
-
-//Metematics credentials from .env
 
 // NASA POWER API endpoint and constants
 const BASE_URL = "https://power.larc.nasa.gov/api/temporal/daily/point";
-// const COMMUNITY = "AG";
-// const FORMAT = "JSON";
+
 
 // Parameter keys
 const TEMP_PARAM = "T2M";     // Daily Mean 2 Meter Air Temperature
 const RAIN_PARAM = "PRECTOT"; // Daily Total Precipitation
 const WIND_PARAM = "WS2M";    // Daily Mean 2 Meter Wind Speed
 
-/**
- * Mock Geocoding (replace with a real API later)
- */
-// async function geologicalLocation(locationName) {
-//   console.warn(`[Geocoding] Using mock coordinates for: ${locationName}`);
-
-//   if (locationName.toLowerCase().includes("san francisco")) {
-//     return { lat: 37.7749, lon: -122.4194 };
-//   }
-
-//   return { lat: 40.7128, lon: -74.006 }; // fallback (NYC)
-// }
-
-/**
- * Clean invalid NASA values (-999)
- */
 
 const cleanValue = (val) => val !== null && val !== undefined && val !== -999
 ? parseFloat(val).toFixed(2)
 : null;
-// function sanitize(val) {
-//   return val === undefined || val === null || val === -999 || val === "-999"
-//     ? null
-//     : parseFloat(val).toFixed(2);
-// }
+
 
 /**
  * Geocoding function for NASA service
  */
 async function geologicalLocation(locationName) {
-  console.log(`🌍 Geocoding location for NASA: ${locationName}`);
+  console.log(`Geocoding location for NASA: ${locationName}`);
   
   // Check for obviously invalid locations (single characters, very short strings, etc.)
   if (!locationName || locationName.trim().length < 2 || /^[a-zA-Z]$/.test(locationName.trim())) {
@@ -76,14 +59,14 @@ async function geologicalLocation(locationName) {
         lon: parseFloat(result.lon)
       };
       
-      console.log(`✅ Found coordinates for ${locationName}:`, coords);
+      console.log(`Found coordinates for ${locationName}:`, coords);
       return coords;
     } else {
       throw new Error(`Sorry, I couldn't find "${locationName}". Please check the spelling and try a different location.`);
     }
     
   } catch (error) {
-    console.error(`❌ Geocoding error for ${locationName}:`, error.message);
+    console.error(`Geocoding error for ${locationName}:`, error.message);
     throw error;
   }
 }
@@ -95,42 +78,16 @@ async function fetchNasaData(lat, lon, date, parameters) {
   const nasaDate = date.replace(/-/g, "");
 
   const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&startDate=${nasaDate}&endDate=${nasaDate}&parameters=${parameters}&community=AG&format=JSON`;
-  //const url = `${NASA_POWER_BASE_URL}latitude=${lat}&longitude=${lon}&start_date=${nasaDate}&end_date=${nasaDate}&parameters=${parameters}&community=AG&format=JSON`;
-  // url.searchParams.append("latitude", lat);
-  // url.searchParams.append("longitude", lon);
-  // url.searchParams.append("start", nasaDate);
-  // url.searchParams.append("end", nasaDate);
-  // url.searchParams.append("parameters", parameters);
-  // url.searchParams.append("community", COMMUNITY);
-  // url.searchParams.append("format", FORMAT);
-
-  // console.log("Fetching NASA URL:", url.toString());   // 👈 log the full URL
-
-  // try {
-  //   const response = await fetch(url.toString());
-  //   console.log("NASA response status:", response.status);  // 👈 log status
-
-  //   if (!response.ok) {
-  //     throw new Error(`NASA API error: Status ${response.status}`);
-  //   }
-
-  //   const data = await response.json();
-  //   console.log("NASA data received:", JSON.stringify(data).slice(0, 200)); // 👈 preview data
-  //   return data.properties || data;
-  // } catch (error) {
-  //   console.error(" NASA fetch error:", error);
-  //   throw new Error("Could not retrieve data from NASA service.");
-  // }
-
-  console.log(`🌤️ Fetching NASA URL: ${url}`);
   
+
+  console.log(`Fetching NASA URL: ${url}`);  
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`NASA API error: Status ${response.status}`);
   }
   
   const data = await response.json();
-  console.log(`📊 NASA data received:`, JSON.stringify(data).slice(0, 200));
+  console.log(`NASA data received:`, JSON.stringify(data).slice(0, 200));
   
   return data.properties || data;
 }

@@ -17,7 +17,7 @@ const BASE_URL_METEOMATICS = "https://api.meteomatics.com";
  * Geocoding function for Meteomatics (same as NASA service)
  */
 async function geologicalLocation(locationName) {
-  console.log(`🌍 Geocoding location for Meteomatics: ${locationName}`);
+  console.log(`Geocoding location for Meteomatics: ${locationName}`);
   
   // Check for obviously invalid locations (single characters, very short strings, etc.)
   if (!locationName || locationName.trim().length < 2 || /^[a-zA-Z]$/.test(locationName.trim())) {
@@ -47,14 +47,14 @@ async function geologicalLocation(locationName) {
         lon: parseFloat(result.lon)
       };
       
-      console.log(`✅ Found coordinates for ${locationName}:`, coords);
+      console.log(`Found coordinates for ${locationName}:`, coords);
       return coords;
     } else {
       throw new Error(`Sorry, I couldn't find "${locationName}". Please check the spelling and try a different location.`);
     }
     
   } catch (error) {
-    console.error(`❌ Geocoding error for ${locationName}:`, error.message);
+    console.error(`Geocoding error for ${locationName}:`, error.message);
     throw error; // Re-throw the error instead of using fallback
   }
 }
@@ -86,7 +86,7 @@ async function fetchMeteomaticsData(dataQuery, lat, lon, parameters, modelSource
     // Try the correct Meteomatics API format without model parameter
     const url = `${BASE_URL_METEOMATICS}/${dataQuery}/${parameters}/${location}/json`;
 
-    console.log(`🌤️ Fetching Meteomatics URL: ${url}`);
+    console.log(`Fetching Meteomatics URL: ${url}`);
     
     const response = await fetch(url, {headers: getAuthorization()});
     if (!response.ok) {
@@ -164,7 +164,7 @@ export async function getWeatherSummary(locationName, date) {
             console.log(`🔮 Future date detected, using Meteomatics forecast for ${date}`);
             return await getMeteomaticsForecast(locationName, date);
         } else {
-            console.log(`📊 Past date detected, using NASA historical data for ${date}`);
+            console.log(`Past date detected, using NASA historical data for ${date}`);
             // Import NASA service dynamically to avoid circular imports
             const { getSummary } = await import('../nasaService.js');
             return await getSummary(locationName, date);

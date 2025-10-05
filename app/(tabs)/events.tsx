@@ -11,8 +11,11 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getDb } from "@/firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
+import { useTheme } from "@/context/theme-context";
 
 export default function EventsScreen() {
+  const { theme, colors } = useTheme();
+
   const [events, setEvents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOption, setSortOption] = useState("Date");
@@ -45,21 +48,21 @@ export default function EventsScreen() {
     loadEvents();
   }, []);
 
-  // --- Color badge helper ---
+  // --- Badge color helper ---
   const getBadgeColor = (favorability) => {
     switch (favorability) {
       case "FAVORABLE":
-        return "#90EE90"; // green
+        return "#90EE90";
       case "OKAY":
-        return "#FFD700"; // yellow
+        return "#FFD700";
       case "UNFAVORABLE":
-        return "#FF7F7F"; // red
+        return "#FF7F7F";
       default:
         return "#ccc";
     }
   };
 
-  // --- Sorting ---
+  // --- Sorting (Name or Date only) ---
   const sortEvents = (data) => {
     return [...data].sort((a, b) => {
       switch (sortOption) {
@@ -68,15 +71,10 @@ export default function EventsScreen() {
             ? a.name.localeCompare(b.name)
             : b.name.localeCompare(a.name);
         case "Date":
+        default:
           return ascending
             ? new Date(a.date).getTime() - new Date(b.date).getTime()
             : new Date(b.date).getTime() - new Date(a.date).getTime();
-        case "Favorability":
-          return ascending
-            ? a.favorability.localeCompare(b.favorability)
-            : b.favorability.localeCompare(a.favorability);
-        default:
-          return 0;
       }
     });
   };
@@ -88,13 +86,37 @@ export default function EventsScreen() {
     )
   );
 
+  // --- Theme-based colors ---
+  const backgroundColor = colors.background;
+  const textColor = colors.text;
+  const tintColor = colors.tint;
+  const borderColor =
+    theme === "dark" ? "#333" : theme === "system" ? "#a8dadc" : "#ddd";
+  const cardBackground =
+    theme === "dark" ? "#1e1e1e" : theme === "system" ? "#ffffff" : "#ffffff";
+  const searchBg =
+    theme === "dark" ? "#222" : theme === "system" ? "#f1f5f4" : "#fff";
+  const placeholderColor = theme === "dark" ? "#aaa" : "#777";
+
   // --- Render one event card ---
   const renderEvent = ({ item }) => (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: cardBackground,
+          borderColor,
+        },
+      ]}
+    >
       <View style={styles.cardHeader}>
         <View>
-          <Text style={styles.eventName}>{item.name}</Text>
-          <Text style={styles.eventDate}>{item.date}</Text>
+          <Text style={[styles.eventName, { color: textColor }]}>
+            {item.name}
+          </Text>
+          <Text style={[styles.eventDate, { color: placeholderColor }]}>
+            {item.date}
+          </Text>
         </View>
         <View
           style={[
@@ -108,141 +130,174 @@ export default function EventsScreen() {
     </View>
   );
 
-  // --- UI ---
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My Events</Text>
+    <View style={[styles.container, { backgroundColor }]}>
+      <View
+        style={[
+          styles.innerCard,
+          {
+            backgroundColor: theme === "dark" ? "#1e1e1e" : "#fff",
+            borderColor,
+          },
+        ]}
+      >
+        <Text style={[styles.title, { color: textColor }]}>My Events</Text>
 
-      {/* Search Input */}
-      <TextInput
-        placeholder="Search by name..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        style={styles.searchBar}
-      />
+        {/* Search Input */}
+        <TextInput
+          placeholder="Search by event name..."
+          placeholderTextColor={placeholderColor}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: searchBg,
+              color: textColor,
+              borderColor,
+            },
+          ]}
+        />
 
-      {/* Sort Dropdown */}
-      <View style={{ alignItems: "flex-end", marginBottom: 10 }}>
-        <TouchableOpacity
-          onPress={() => setDropdownVisible(!dropdownVisible)}
-          style={styles.sortButton}
+        {/* Sort Dropdown */}
+        <View
+          style={{
+            alignItems: "flex-end",
+            marginBottom: 10,
+            position: "relative",
+            zIndex: 1,
+          }}
         >
-          <Text style={styles.sortText}>
-            Sort by: {sortOption} {ascending ? "↑" : "↓"}
-          </Text>
-        </TouchableOpacity>
-
-        {dropdownVisible && (
-          <View
-            style={styles.dropdownWrapper}
-            pointerEvents="box-none"
+          <TouchableOpacity
+            onPress={() => setDropdownVisible(!dropdownVisible)}
+            style={[
+              styles.sortButton,
+              { backgroundColor: searchBg, borderColor },
+            ]}
           >
-            <View style={styles.dropdown}>
-              {["Name", "Date", "Favorability"].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => {
-                    if (sortOption === option) setAscending(!ascending);
-                    else {
-                      setSortOption(option);
-                      setAscending(true);
-                    }
-                    setDropdownVisible(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownOption,
-                      sortOption === option && { fontWeight: "700" },
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-      </View>
+            <Text style={[styles.sortText, { color: textColor }]}>
+              Sort by: {sortOption} {ascending ? "↑" : "↓"}
+            </Text>
+          </TouchableOpacity>
 
-      {/* Events List */}
-      <FlatList
-        data={filteredAndSorted}
-        renderItem={renderEvent}
-        keyExtractor={(item, idx) => idx.toString()}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No events saved yet.</Text>
-        }
-      />
+          {dropdownVisible && (
+            <View style={styles.dropdownWrapper} pointerEvents="box-none">
+              <View
+                style={[
+                  styles.dropdown,
+                  {
+                    backgroundColor: searchBg,
+                    borderColor,
+                  },
+                ]}
+              >
+                {["Name", "Date"].map((option) => (
+                  <TouchableOpacity
+                    key={option}
+                    onPress={() => {
+                      if (sortOption === option) setAscending(!ascending);
+                      else {
+                        setSortOption(option);
+                        setAscending(true);
+                      }
+                      setDropdownVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.dropdownOption,
+                        {
+                          color: textColor,
+                          fontWeight: sortOption === option ? "700" : "400",
+                        },
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Events List */}
+        <FlatList
+          data={filteredAndSorted}
+          renderItem={renderEvent}
+          keyExtractor={(item, idx) => idx.toString()}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: placeholderColor }]}>
+              No events saved yet.
+            </Text>
+          }
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8f8f8", padding: 20 },
-  title: { fontSize: 26, fontWeight: "bold", marginBottom: 10 },
-  searchBar: {
-    backgroundColor: "#fff",
+  container: { flex: 1, padding: 20, alignItems: "center" },
+  innerCard: {
+    width: "100%",
+    borderRadius: 20,
+    padding: 20,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  searchBar: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 15,
   },
   sortButton: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     zIndex: 5,
   },
   sortText: { fontWeight: "600" },
   dropdownWrapper: {
-    position: "relative",
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  dropdown: {
     position: "absolute",
-    top: 40,
+    top: 42,
     right: 0,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    padding: 8,
     zIndex: 9999,
     elevation: 10,
+  },
+  dropdown: {
+    borderRadius: 12,
+    padding: 8,
+    borderWidth: 1,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
   },
-  dropdownOption: { paddingVertical: 6, fontSize: 16 },
+  dropdownOption: { paddingVertical: 8, fontSize: 16 },
   card: {
-    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 16,
     marginBottom: 10,
+    borderWidth: 1,
     ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        shadowOffset: { width: 0, height: 2 },
-      },
-      android: {
-        elevation: 3,
-      },
+      ios: { shadowOpacity: 0.1, shadowRadius: 5, shadowOffset: { width: 0, height: 2 } },
+      android: { elevation: 2 },
     }),
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  eventName: { fontSize: 18, fontWeight: "600", color: "#333" },
-  eventDate: { color: "#666", marginTop: 2 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between" },
+  eventName: { fontSize: 18, fontWeight: "600" },
+  eventDate: { marginTop: 2, fontSize: 14 },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -250,9 +305,5 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   badgeText: { fontWeight: "700", color: "#000", fontSize: 12 },
-  emptyText: {
-    textAlign: "center",
-    color: "#666",
-    marginTop: 40,
-  },
+  emptyText: { textAlign: "center", marginTop: 40 },
 });
