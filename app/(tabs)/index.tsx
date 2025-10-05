@@ -19,12 +19,18 @@ import SatelliteMap from "@/components/satellite-map";
 
 export default function ExploreScreen() {
   const { theme } = useTheme();
-  const colors = theme === "dark" ? Colors.dark : Colors.light;
-
+const colors =
+    theme === "dark"
+      ? Colors.dark
+      : theme === "system"
+      ? Colors.system
+      : Colors.light;
+      
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedWeather, setSelectedWeather] = useState("");
   const [temperatureRange, setTemperatureRange] = useState([20, 30]);
   const [location, setLocation] = useState("");
+  const [name, setName] = useState("");
   const [unit, setUnit] = useState("C");
   const [modalVisible, setModalVisible] = useState(false);
   const [favorModal, setFavorModal] = useState(false);
@@ -78,7 +84,8 @@ export default function ExploreScreen() {
       const existing = await AsyncStorage.getItem("events");
       const events = existing ? JSON.parse(existing) : [];
       const newEvent = {
-        id: Date.now(),
+        id: Date.now().toString(),
+        name: name,
         date: selectedDate,
         weather: selectedWeather,
         temperatureRange: temperatureRange.map((v) =>
@@ -86,6 +93,8 @@ export default function ExploreScreen() {
         ),
         unit,
         location,
+        favorability: null, //update this later
+
       };
       await AsyncStorage.setItem(
         "events",
@@ -223,7 +232,7 @@ export default function ExploreScreen() {
           Weather I Go
         </Text>
 
-        {/* Location Input */}
+        {/* Event Name Input */}
         <TextInput
           style={{
             backgroundColor: theme === "dark" ? "#2b2b2b" : "#f0f0f0",
@@ -233,10 +242,10 @@ export default function ExploreScreen() {
             width: "85%",
             marginBottom: 16,
           }}
-          placeholder="Search location..."
+          placeholder="Name of Event..."
           placeholderTextColor={theme === "dark" ? "#888" : "#999"}
-          value={location}
-          onChangeText={setLocation}
+          value={name}
+          onChangeText={setName}
         />
 
         {/* Select Date Button */}

@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } fro
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
-import { ThemeProviderWrapper, useTheme } from "@/context/theme-context";
+import { ThemeProvider, useTheme } from "@/context/theme-context";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -25,8 +25,8 @@ function RootStack() {
 
 export default function RootLayout() {
   return (
-    <ThemeProviderWrapper>
+    <ThemeProvider>
       <RootStack />
-    </ThemeProviderWrapper>
+    </ThemeProvider>
   );
 }
