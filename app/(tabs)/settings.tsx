@@ -117,48 +117,6 @@ const handleThemeChange = (selectedTheme: "light" | "dark" | "system") => {
         </View>
       </View>
 
-      {/* TEMPERATURE UNIT */}
-     <View
-        style={{
-          backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
-          padding: 16,
-          borderRadius: 16,
-          marginBottom: 20,
-          borderWidth: 1,
-          borderColor: theme === "dark" ? "#444" : "#ddd",
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 20,
-            fontWeight: "600",
-            color: colors.text,
-            marginBottom: 12,
-          }}
-        >
-          Temperature Unit
-        </Text>
-
-        <TouchableOpacity
-          onPress={toggleUnit}
-          style={{
-            backgroundColor: colors.tint,
-            paddingVertical: 10,
-            borderRadius: 12,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.background,
-              textAlign: "center",
-              fontWeight: "600",
-            }}
-          >
-            Current: °{unit} — Tap to Change
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {/* RESET SETTINGS */}
       <View
         style={{
