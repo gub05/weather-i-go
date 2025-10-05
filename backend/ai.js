@@ -20,27 +20,20 @@ export async function askGemini(prompt) {
 
 //function to explain weather data using Gemini
 export async function explainWeather(weatherData) {
-  const prompt = `Explain the following weather data in simple terms for a user: ${JSON.stringify(weatherData)}`;
+  const prompt = `Explain the following weather data in simple, clean text without markdown formatting, bullet points, or special characters. Just use plain text with periods and commas: ${JSON.stringify(weatherData)}`;
   return askGemini(prompt);
 }
 
 //function to compare two weather forecasts using Gemini
 export async function compareForecasts(forecast1, forecast2) {
-  const prompt = `Forecast 1 is the user's desired weather conditions and forecast 2 is the actual weather conditions.
-  Compare the two forecasts and explain the differences in simple terms for a user and explain whether it's compatible or not. It should
-  be readable and user friendly and not too technical and not too long, short and simple but friendly.
-  Forecast 1: ${JSON.stringify(forecast1)}
-  Forecast 2: ${JSON.stringify(forecast2)}`;
+  const prompt = `Compare the user's desired weather with the actual weather. Write in simple, clean text without markdown formatting, bullet points, asterisks, or special characters.
+Forecast 1 is the user's desired weather conditions and forecast 2 is the actual weather conditions.
+Compare the two forecasts and explain the differences in simple terms for a user and explain whether it's compatible or not. It should
+be readable and user friendly and not too technical and not too long, short and simple but friendly.
+
+User's desired weather: ${JSON.stringify(forecast1)}
+Actual weather: ${JSON.stringify(forecast2)}`;
   return askGemini(prompt);
 }
 
-// // Test the function (this is OUTSIDE askGemini)
-explainWeather({  temperature: 100, condition: "sunny", humidity: 80}).then((explanation) => {
-  console.log("Weather explanation:", explanation);
-});
-compareForecasts(
-  { temperature: 100, condition: "sunny", humidity: 80 },
-  { temperature: 85, condition: "sunny", humidity: 70 }
-).then((comparison) => {
-  console.log("Forecast comparison:", comparison);
-});
+
