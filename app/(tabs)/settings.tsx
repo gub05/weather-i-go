@@ -1,20 +1,12 @@
 import React from "react";
-import {
-  SafeAreaView,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { useTheme } from "@/context/theme-context";
 import { Colors } from "@/constants/theme";
 
 const ToggleSwitch = ({ label, options, selected, onSelect, textColor, tintColor }) => (
-  <View className="flex-row items-center justify-between py-4">
-    <Text style={{ color: textColor }} className="text-base">
-      {label}
-    </Text>
-    <View className="flex-row rounded-full p-1" style={{ backgroundColor: tintColor + "33" }}>
+  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16 }}>
+    <Text style={{ color: textColor, fontSize: 16 }}>{label}</Text>
+    <View style={{ flexDirection: "row", backgroundColor: tintColor + "33", borderRadius: 9999, padding: 4 }}>
       {options.map((option) => (
         <TouchableOpacity
           key={option}
@@ -41,18 +33,16 @@ const ToggleSwitch = ({ label, options, selected, onSelect, textColor, tintColor
 );
 
 export default function SettingsScreen() {
-  const { theme, preference, setThemePreference } = useColorScheme();
+  const { theme, preference, setThemePreference } = useTheme();
   const colors = theme === "dark" ? Colors.dark : Colors.light;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 20, marginBottom: 24 }}>
-        <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.text }}>
-          Settings
-        </Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 16, paddingTop: 40 }}>
+      <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.text, marginBottom: 20 }}>
+        Settings
+      </Text>
 
-      <ScrollView style={{ paddingHorizontal: 16 }}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View
           style={{
             backgroundColor: theme === "dark" ? "#1e1f20" : "#fff",
@@ -90,38 +80,13 @@ export default function SettingsScreen() {
             padding: 16,
           }}
         >
-          <TouchableOpacity className="py-3 items-center">
+          <TouchableOpacity style={{ alignItems: "center", paddingVertical: 12 }}>
             <Text style={{ color: "#e63946", fontWeight: "bold", fontSize: 16 }}>
               Log Out
             </Text>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text className="text-white mb-2">Temperature Unit:</Text>
-      <View className="flex-row mb-4">
-        {["Celsius", "Fahrenheit", "Kelvin"].map((u) => (
-          <TouchableOpacity
-            key={u}
-            className={`flex-1 p-3 rounded-xl ${
-              unit === u ? "bg-blue-500" : "bg-gray-700"
-            } mr-2`}
-            onPress={() => {
-              setUnit(u);
-              saveSettings(theme, u);
-            }}
-          >
-            <Text className="text-center text-white">{u}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <View className="bg-gray-800 p-3 rounded-xl">
-        <Text className="text-white text-sm">Settings (JSON):</Text>
-        <Text className="text-green-400 text-xs mt-2">
-          {JSON.stringify({ theme, unit }, null, 2)}
-        </Text>
-      </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }

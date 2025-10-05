@@ -1,4 +1,3 @@
-// _layout.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 
@@ -7,8 +6,12 @@ export default function Layout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: "#3b82f6",
-        tabBarStyle: { backgroundColor: "#111827" },
+        tabBarActiveTintColor: "#2563eb",
+        tabBarStyle: {
+          backgroundColor: "#fff",
+          borderTopWidth: 0,
+          elevation: 3,
+        },
       }}
     >
       <Tabs.Screen
@@ -16,7 +19,7 @@ export default function Layout() {
         options={{
           title: "Explore",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass" color={color} size={size} />
+            <Ionicons name="map-outline" color={color} size={size} />
           ),
         }}
       />
@@ -25,7 +28,7 @@ export default function Layout() {
         options={{
           title: "My Events",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" color={color} size={size} />
+            <Ionicons name="calendar-outline" color={color} size={size} />
           ),
         }}
       />
@@ -34,7 +37,7 @@ export default function Layout() {
         options={{
           title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" color={color} size={size} />
+            <Ionicons name="settings-outline" color={color} size={size} />
           ),
         }}
       />

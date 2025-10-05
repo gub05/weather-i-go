@@ -1,8 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useEffect, useState } from "react";
 import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "@/context/theme-context";
+import { Colors } from "@/constants/theme";
 
 export default function EventsScreen() {
+  const { theme } = useTheme();
+  const colors = theme === "dark" ? Colors.dark : Colors.light;
+
   const [events, setEvents] = useState([]);
   const [recentlyDeleted, setRecentlyDeleted] = useState([]);
 
@@ -32,42 +37,75 @@ export default function EventsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-900 p-4">
-      <Text className="text-white text-2xl font-bold mb-4">My Events</Text>
+    <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
+      <Text style={{ color: colors.text, fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
+        My Events
+      </Text>
 
       <FlatList
         data={events}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View className="bg-gray-800 p-3 rounded-xl mb-3">
-            <Text className="text-white font-semibold">
+          <View
+            style={{
+              backgroundColor: theme === "dark" ? "#1f1f1f" : "#f5f5f5",
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 12,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
               {item.weather} - {item.date}
             </Text>
-            <Text className="text-gray-400">{item.location}</Text>
+            <Text style={{ color: theme === "dark" ? "#aaa" : "#555" }}>
+              {item.location}
+            </Text>
             <TouchableOpacity
-              className="bg-red-500 p-2 rounded-xl mt-2"
+              style={{
+                backgroundColor: "#e63946",
+                paddingVertical: 8,
+                borderRadius: 12,
+                marginTop: 8,
+              }}
               onPress={() => handleDelete(item.id)}
             >
-              <Text className="text-white text-center">Delete</Text>
+              <Text style={{ color: "#fff", textAlign: "center" }}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
       />
 
-      <Text className="text-white text-xl mt-6 mb-2">Recently Deleted</Text>
+      <Text style={{ color: colors.text, fontSize: 20, marginTop: 24, marginBottom: 8 }}>
+        Recently Deleted
+      </Text>
+
       <FlatList
         data={recentlyDeleted}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View className="bg-gray-700 p-3 rounded-xl mb-3">
-            <Text className="text-gray-300 font-semibold">
+          <View
+            style={{
+              backgroundColor: theme === "dark" ? "#2b2b2b" : "#eaeaea",
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 12,
+            }}
+          >
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
               {item.weather} - {item.date}
             </Text>
             <TouchableOpacity
-              className="bg-blue-500 p-2 rounded-xl mt-2"
+              style={{
+                backgroundColor: colors.tint,
+                paddingVertical: 8,
+                borderRadius: 12,
+                marginTop: 8,
+              }}
               onPress={() => handleRestore(item.id)}
             >
-              <Text className="text-white text-center">Restore</Text>
+              <Text style={{ color: colors.background, textAlign: "center" }}>
+                Restore
+              </Text>
             </TouchableOpacity>
           </View>
         )}
