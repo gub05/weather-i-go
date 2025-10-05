@@ -30,6 +30,7 @@ const colors =
   const [selectedWeather, setSelectedWeather] = useState("");
   const [temperatureRange, setTemperatureRange] = useState([20, 30]);
   const [location, setLocation] = useState("");
+  const [name, setName] = useState("");
   const [unit, setUnit] = useState("C");
   const [modalVisible, setModalVisible] = useState(false);
   const [favorModal, setFavorModal] = useState(false);
@@ -57,7 +58,8 @@ const colors =
       const existing = await AsyncStorage.getItem("events");
       const events = existing ? JSON.parse(existing) : [];
       const newEvent = {
-        id: Date.now(),
+        id: Date.now().toString(),
+        name: name,
         date: selectedDate,
         weather: selectedWeather,
         temperatureRange: temperatureRange.map((v) =>
@@ -65,6 +67,8 @@ const colors =
         ),
         unit,
         location,
+        favorability: null, //update this later
+
       };
       await AsyncStorage.setItem(
         "events",
@@ -203,7 +207,7 @@ const colors =
           Weather I Go
         </Text>
 
-        {/* Location Input */}
+        {/* Event Name Input */}
         <TextInput
           style={{
             backgroundColor: theme === "dark" ? "#2b2b2b" : "#f0f0f0",
@@ -213,10 +217,10 @@ const colors =
             width: "85%",
             marginBottom: 16,
           }}
-          placeholder="Search location..."
+          placeholder="Name of Event..."
           placeholderTextColor={theme === "dark" ? "#888" : "#999"}
-          value={location}
-          onChangeText={setLocation}
+          value={name}
+          onChangeText={setName}
         />
 
         {/* Select Date Button */}
