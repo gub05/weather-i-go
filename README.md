@@ -1,50 +1,23 @@
-# Welcome to your Expo app 👋
+# Weather-I-Go 🌦️  
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+_Making weather simple, personal, and easy to understand._  
 
-## Get started
+## Inspiration  
+Most weather apps only give you numbers like **temperature**, **humidity**, or **wind speed**. While that’s useful, it doesn’t always help you know what the day will _feel_ like or whether it matches your idea of good weather. We wanted to create something that explains the weather in **plain language** and tells you if it lines up with what you consider the perfect day. That’s where **Weather-I-Go** came from.  
 
-1. Install dependencies
+## What it does  
+Weather-I-Go takes your **location**, **date**, and your **“perfect weather” preferences** (for example, sunny and \\(25^\\circ C\\)) and then:  
 
-   ```bash
-   npm install
-   ```
+1. Pulls real data from **NASA’s POWER API** and **MateoMedics Weather API**, which even includes data stretching into the future up to the year **2100**.  
+2. Uses **AI** to explain the numbers in simple, friendly text so they’re easy to understand.  
+3. Compares the actual conditions to your “perfect weather,” letting you know right away whether the day matches what you’re hoping for.  
 
-2. Start the app
+_It’s like having a personal weather guide that speaks your language._  
 
-   ```bash
-   npx expo start
-   ```
+## How we built it  
+- **Frontend:** React with Tailwind CSS for a clean and responsive design.  
+- **Backend:** Node.js + Express to connect the frontend with NASA data and AI services.  
+- **Data:** NASA POWER API for weather parameters and Google Earth Engine for geospatial context.  
+- **AI:** Gemini to explain the weather in a way that feels clear and personal.  
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```javascript
