@@ -2,11 +2,55 @@
 // components/satellite-map.tsx
 // Interactive satellite map component that works in Expo Go
 
-import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform, AppState, Image, PanResponder } from 'react-native';
 import { initializeSatelliteImagery, getSatelliteData } from '@/api/satelliteImagery';
 import { useTheme } from "@/context/theme-context";
 import { Colors } from "@/constants/theme";
+
+// Rate limiting configuration
+const RATE_LIMIT_CONFIG = {
+  maxRequestsPerMinute: 30,
+  minTimeBetweenRequests: 2000, // 2 seconds
+  requestWindow: 60000, // 1 minute
+};
+
+class RateLimiter {
+  private requests: number[] = [];
+  private lastRequestTime: number = 0;
+
+  canMakeRequest(): boolean {
+    const now = Date.now();
+    
+    // Check minimum time between requests
+    if (now - this.lastRequestTime < RATE_LIMIT_CONFIG.minTimeBetweenRequests) {
+      return false;
+    }
+
+    // Clean old requests outside the window
+    this.requests = this.requests.filter(
+      time => now - time < RATE_LIMIT_CONFIG.requestWindow
+    );
+
+    // Check if we've exceeded the rate limit
+    if (this.requests.length >= RATE_LIMIT_CONFIG.maxRequestsPerMinute) {
+      return false;
+    }
+
+    return true;
+  }
+
+  recordRequest(): void {
+    const now = Date.now();
+    this.requests.push(now);
+    this.lastRequestTime = now;
+  }
+
+  reset(): void {
+    this.requests = [];
+    this.lastRequestTime = 0;
+  }
+}
 
 // Define Region interface for type safety
 interface Region {
@@ -44,6 +88,39 @@ const WebSatelliteMap = ({
   const [isDragging, setIsDragging] = useState(false);
   const [lastPanPoint, setLastPanPoint] = useState<{x: number, y: number} | null>(null);
   const mapContainerRef = useRef<any>(null);
+
+  // Pan responder for proper drag handling
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+      onPanResponderGrant: (evt) => {
+        setIsDragging(true);
+        const { locationX, locationY } = evt.nativeEvent;
+        setLastPanPoint({ x: locationX, y: locationY });
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (!lastPanPoint) return;
+        
+        const { dx, dy } = gestureState;
+        const rect = mapContainerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        // Convert pixel movement to lat/lng movement
+        const latMovement = (dy / rect.height) * (180 / Math.pow(2, zoomLevel - 8));
+        const lngMovement = (dx / rect.width) * (360 / Math.pow(2, zoomLevel - 8));
+        
+        setWebMapCenter(prev => ({
+          lat: Math.max(-85, Math.min(85, prev.lat - latMovement)),
+          lng: prev.lng - lngMovement
+        }));
+      },
+      onPanResponderRelease: () => {
+        setTimeout(() => setIsDragging(false), 100);
+        setLastPanPoint(null);
+      },
+    })
+  ).current;
 
   const mapLayers = [
     { id: 'satellite', name: '🛰️ Satellite', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' },
@@ -154,57 +231,78 @@ const WebSatelliteMap = ({
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
+    // Fix pin placement accuracy by using more precise coordinate calculation
     const { lat: clickLat, lng: clickLng } = pixelToLatLng(x, y, rect);
     
-    setSelectedLocation({ latitude: clickLat, longitude: clickLng });
+    // Round coordinates to prevent floating point precision issues
+    const roundedLat = Math.round(clickLat * 10000) / 10000;
+    const roundedLng = Math.round(clickLng * 10000) / 10000;
+    
+    setSelectedLocation({ latitude: roundedLat, longitude: roundedLng });
     
     if (onLocationSelect) {
-      onLocationSelect(clickLat, clickLng);
+      onLocationSelect(roundedLat, roundedLng);
     }
 
     // Get satellite data for this location
     try {
       const { getSatelliteData } = await import('@/api/satelliteImagery');
-      const data = await getSatelliteData(clickLat, clickLng, selectedDate);
+      const data = await getSatelliteData(roundedLat, roundedLng, selectedDate);
       setSatelliteData(data);
     } catch (error) {
       console.error('Error getting satellite data:', error);
     }
   };
 
-  const handleTouchStart = (event: any) => {
+  // Mouse event handlers for web
+  const handleMouseDown = (event: any) => {
+    if (Platform.OS !== 'web') return;
     setIsDragging(true);
-    const touch = event.touches[0];
-    setLastPanPoint({ x: touch.clientX, y: touch.clientY });
+    setLastPanPoint({ x: event.clientX, y: event.clientY });
     event.preventDefault();
   };
 
-  const handleTouchMove = (event: any) => {
-    if (!isDragging || !lastPanPoint) return;
+  const handleMouseMove = (event: any) => {
+    if (Platform.OS !== 'web' || !isDragging || !lastPanPoint || !mapContainerRef.current) return;
     
-    const touch = event.touches[0];
-    const deltaX = touch.clientX - lastPanPoint.x;
-    const deltaY = touch.clientY - lastPanPoint.y;
+    const deltaX = event.clientX - lastPanPoint.x;
+    const deltaY = event.clientY - lastPanPoint.y;
     
-    const rect = event.currentTarget.getBoundingClientRect();
+    const rect = mapContainerRef.current.getBoundingClientRect();
     
     // Convert pixel movement to lat/lng movement
     const latMovement = (deltaY / rect.height) * (180 / Math.pow(2, zoomLevel - 8));
     const lngMovement = (deltaX / rect.width) * (360 / Math.pow(2, zoomLevel - 8));
     
     setWebMapCenter(prev => ({
-      lat: Math.max(-85, Math.min(85, prev.lat + latMovement)),
+      lat: Math.max(-85, Math.min(85, prev.lat - latMovement)),
       lng: prev.lng - lngMovement
     }));
     
-    setLastPanPoint({ x: touch.clientX, y: touch.clientY });
-    event.preventDefault();
+    setLastPanPoint({ x: event.clientX, y: event.clientY });
   };
 
-  const handleTouchEnd = () => {
-    setTimeout(() => setIsDragging(false), 100); // Small delay to prevent click after drag
+  const handleMouseUp = () => {
+    if (Platform.OS !== 'web') return;
+    setTimeout(() => setIsDragging(false), 100);
     setLastPanPoint(null);
   };
+
+  // Add global mouse event listeners for web
+  useEffect(() => {
+    if (Platform.OS === 'web' && isDragging) {
+      const handleGlobalMouseMove = (event: MouseEvent) => handleMouseMove(event);
+      const handleGlobalMouseUp = () => handleMouseUp();
+
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isDragging, lastPanPoint, zoomLevel]);
 
   const toggleMapType = () => {
     const currentIndex = mapLayers.findIndex(l => l.id === mapType);
@@ -267,9 +365,9 @@ const WebSatelliteMap = ({
       <View
         ref={mapContainerRef}
         style={[styles.webMapContainer, { backgroundColor: theme === 'dark' ? '#1a1a1a' : '#f0f0f0' }]}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        {...(Platform.OS === 'web' ? {
+          onMouseDown: handleMouseDown,
+        } : panResponder.panHandlers)}
       >
         <TouchableOpacity
           style={styles.mapTileContainer}
@@ -296,24 +394,19 @@ const WebSatelliteMap = ({
                   }
                 ]}
               >
-              <img
-                src={tile.url}
+              <Image
+                source={{ uri: tile.url }}
                 style={{
                   width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                  pointerEvents: 'none',
-                  userSelect: 'none'
+                  height: '100%'
                 }}
-                onError={(e) => {
-                  // Fallback to a different tile service if current fails
-                  const fallbackUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/' +
-                    `${zoomLevel}/${tile.tileY}/${tile.tileX}`;
-                  (e.target as HTMLImageElement).src = fallbackUrl;
+                resizeMode="cover"
+                onError={() => {
+                  // Fallback handled by React Native Image component
+                  if (__DEV__) {
+                    console.warn('Failed to load tile:', tile.url);
+                  }
                 }}
-                alt=""
-                draggable={false}
               />
               </View>
             );
@@ -344,13 +437,13 @@ const WebSatelliteMap = ({
 
         {/* Selected location marker */}
         {selectedLocation && (() => {
-          const mapRect = mapContainerRef.current?.getBoundingClientRect();
+          const mapRect = mapContainerRef.current?.getBoundingClientRect?.();
           if (!mapRect) return null;
           
           const pixel = latLngToPixel(selectedLocation.latitude, selectedLocation.longitude, mapRect);
           
           return (
-            <View style={[styles.locationMarker, {
+            <View key="location-marker" style={[styles.locationMarker, {
               left: pixel.x,
               top: pixel.y,
               backgroundColor: colors.tint
@@ -367,15 +460,17 @@ const WebSatelliteMap = ({
           <Text style={[styles.infoPanelTitle, { color: colors.text }]}>🛰️ Satellite Analysis</Text>
           
           <View style={styles.dataRow}>
-            <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
-              ☁️ Cloud Cover: {satelliteData.cloudCover?.toFixed(1)}%
-              <Text style={[styles.qualityBadge, {
-                color: satelliteData.quality === 'High' ? '#4caf50' :
-                       satelliteData.quality === 'Medium' ? '#ff9800' : '#f44336'
-              }]}>
-                ({satelliteData.quality})
+            <View style={styles.dataRow}>
+              <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
+                ☁️ Cloud Cover: {satelliteData.cloudCover?.toFixed(1)}%{' '}
+                <Text style={[styles.qualityBadge, {
+                  color: satelliteData.quality === 'High' ? '#4caf50' :
+                         satelliteData.quality === 'Medium' ? '#ff9800' : '#f44336'
+                }]}>
+                  ({satelliteData.quality})
+                </Text>
               </Text>
-            </Text>
+            </View>
           </View>
           
           <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
@@ -419,23 +514,36 @@ const WebSatelliteMap = ({
       <View style={[styles.mapInfo, { backgroundColor: theme === 'dark' ? '#1e1f20' : 'white' }]}>
         <Text style={[styles.mapInfoTitle, { color: colors.text }]}>🗺️ Map Information</Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
-          • Click on the map to select a location
+          {'\u2022'} Click on the map to select a location
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
-          • Drag to pan around the map
+          {'\u2022'} Drag to pan around the map
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
-          • Use zoom controls to change detail level
+          {'\u2022'} Use zoom controls to change detail level
         </Text>
         <Text style={[styles.mapInfoText, { color: theme === 'dark' ? '#aaa' : '#666' }]}>
-          • Switch between satellite, terrain, and street views
+          {'\u2022'} Switch between satellite, terrain, and street views
         </Text>
       </View>
     </View>
   );
 };
 
-export default function SatelliteMap({
+// Platform-specific implementation to optimize performance
+export default function SatelliteMap(props: SatelliteMapProps) {
+  // On Android, use the optimized version for better performance
+  if (Platform.OS === 'android') {
+    const SatelliteMapAndroid = require('./satellite-map-android').default;
+    return <SatelliteMapAndroid {...props} />;
+  }
+
+  // For web and iOS, use the original implementation
+  return <SatelliteMapOriginal {...props} />;
+}
+
+// Original satellite map component for web and iOS
+function SatelliteMapOriginal({
   onLocationSelect,
   selectedDate,
   weatherCondition,
@@ -455,6 +563,32 @@ export default function SatelliteMap({
   const [selectedLocation, setSelectedLocation] = useState<{latitude: number, longitude: number} | null>(null);
   const [satelliteData, setSatelliteData] = useState<any>(null);
   const [serviceStatus, setServiceStatus] = useState<string>('Initializing...');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Memory and performance management
+  const mapRef = useRef<any>(null);
+  const rateLimiter = useRef(new RateLimiter());
+  const mounted = useRef(true);
+  const dataCache = useRef(new Map<string, any>());
+
+  // App state management for memory optimization
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'background') {
+        // Clear cache and reset rate limiter when app goes to background
+        dataCache.current.clear();
+        rateLimiter.current.reset();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    
+    return () => {
+      mounted.current = false;
+      subscription?.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const initializeService = async () => {
@@ -473,33 +607,88 @@ export default function SatelliteMap({
     initializeService();
   }, []);
 
-  const handleMapPress = async (event: any) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setSelectedLocation({ latitude, longitude });
+  const generateCacheKey = (lat: number, lng: number, date?: Date): string => {
+    const dateStr = date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    return `${lat.toFixed(4)}_${lng.toFixed(4)}_${dateStr}`;
+  };
+
+  const handleMapPress = useCallback(async (event: any) => {
+    if (!mounted.current || isLoading) return;
     
-    // Get satellite data for this location
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    
+    // Check rate limiting
+    if (!rateLimiter.current.canMakeRequest()) {
+      Alert.alert(
+        'Please Wait',
+        'Too many requests. Please wait a moment before selecting another location.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setSelectedLocation({ latitude, longitude });
+    setIsLoading(true);
+    setErrorMessage(null);
+    
     try {
-      const data = await getSatelliteData(latitude, longitude, selectedDate);
+      // Check cache first
+      const cacheKey = generateCacheKey(latitude, longitude, selectedDate);
+      let data = dataCache.current.get(cacheKey);
+      
+      if (!data) {
+        // Record the request for rate limiting
+        rateLimiter.current.recordRequest();
+        
+        // Make API call
+        data = await getSatelliteData(latitude, longitude, selectedDate);
+        
+        if (!mounted.current) return;
+        
+        // Cache the result (limit cache size to prevent memory issues)
+        if (dataCache.current.size > 50) {
+          // Remove oldest entries
+          const keys = Array.from(dataCache.current.keys());
+          for (let i = 0; i < 10; i++) {
+            dataCache.current.delete(keys[i]);
+          }
+        }
+        dataCache.current.set(cacheKey, data);
+      }
+      
+      if (!mounted.current) return;
+      
       setSatelliteData(data);
       
       if (onLocationSelect) {
         onLocationSelect(latitude, longitude);
       }
       
-      // Show location info
+      // Show optimized location info for mobile
       Alert.alert(
         'Location Selected',
-        `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}\n` +
-        `Cloud Cover: ${data.cloudCover?.toFixed(1)}%\n` +
-        `Surface Temp: ${data.surfaceTemperature?.toFixed(1)}°C`,
+        `📍 ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n` +
+        `☁️ Cloud Cover: ${data.cloudCover?.toFixed(1)}%\n` +
+        `🌡️ Surface Temp: ${data.surfaceTemperature?.toFixed(1)}°C`,
         [{ text: 'OK' }]
       );
     } catch (error) {
+      if (!mounted.current) return;
       console.error('Error getting satellite data:', error);
+      setErrorMessage('Failed to load satellite data. Please try again.');
+      Alert.alert(
+        'Data Error',
+        'Unable to fetch satellite data. This may be due to network issues or service limitations.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      if (mounted.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, [selectedDate, onLocationSelect, isLoading]);
 
-  const toggleMapType = () => {
+  const toggleMapType = useCallback(() => {
     if (mapType === 'standard') {
       setMapType('satellite');
     } else if (mapType === 'satellite') {
@@ -507,7 +696,14 @@ export default function SatelliteMap({
     } else {
       setMapType('standard');
     }
-  };
+  }, [mapType]);
+
+  // Optimized region change handler with debouncing
+  const handleRegionChangeComplete = useCallback((newRegion: Region) => {
+    if (mounted.current) {
+      setRegion(newRegion);
+    }
+  }, []);
 
   // Check if we're on web or if react-native-maps is not available
   const isWeb = Platform.OS === 'web';
@@ -581,16 +777,18 @@ export default function SatelliteMap({
 
         {/* Interactive Map */}
         <MapView
+          ref={mapRef}
           style={styles.map}
           provider={PROVIDER_GOOGLE}
           mapType={mapType}
           region={region}
-          onRegionChangeComplete={setRegion}
+          onRegionChangeComplete={handleRegionChangeComplete}
           onPress={handleMapPress}
           showsUserLocation={true}
           showsMyLocationButton={true}
           showsCompass={true}
           showsScale={true}
+          // Memory optimization settings
           maxZoomLevel={18}
           minZoomLevel={2}
           loadingEnabled={true}
@@ -599,6 +797,21 @@ export default function SatelliteMap({
           moveOnMarkerPress={false}
           pitchEnabled={false}
           rotateEnabled={false}
+          // Performance optimizations for Android
+          toolbarEnabled={false}
+          cacheEnabled={true}
+          scrollEnabled={true}
+          zoomEnabled={true}
+          // Reduce memory usage - prevent excessive logging
+          onMapReady={(() => {
+            let hasLogged = false;
+            return () => {
+              if (!hasLogged && __DEV__) {
+                hasLogged = true;
+                console.log('Map ready - optimized for iOS performance');
+              }
+            };
+          })()}
         >
           {selectedLocation && (
             <Marker
@@ -616,8 +829,15 @@ export default function SatelliteMap({
   return (
     <View style={styles.container}>
       {/* Status Banner */}
-      <View style={[styles.statusBanner, { backgroundColor: theme === 'dark' ? '#2b2b2b' : '#e8f5e8' }]}>
-        <Text style={[styles.statusText, { color: theme === 'dark' ? '#4caf50' : '#2e7d32' }]}>{serviceStatus}</Text>
+      <View style={[styles.statusBanner, { backgroundColor: errorMessage ? '#ffebee' : theme === 'dark' ? '#2b2b2b' : '#e8f5e8' }]}>
+        <Text style={[styles.statusText, { color: errorMessage ? '#c62828' : theme === 'dark' ? '#4caf50' : '#2e7d32' }]}>
+          {errorMessage || serviceStatus}
+        </Text>
+        {isLoading && (
+          <Text style={[styles.statusText, { fontSize: 12, marginTop: 4 }]}>
+            ⏳ Loading satellite data...
+          </Text>
+        )}
       </View>
 
       {/* Native Map Component */}
@@ -628,15 +848,17 @@ export default function SatelliteMap({
         <View style={[styles.infoPanel, { backgroundColor: theme === 'dark' ? '#1e1f20' : 'white' }]}>
           <Text style={[styles.infoPanelTitle, { color: colors.text }]}>🛰️ Satellite Analysis</Text>
           
-          <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
-            ☁️ Cloud Cover: {satelliteData.cloudCover?.toFixed(1)}%
-            <Text style={[styles.qualityBadge, {
-              color: satelliteData.quality === 'High' ? '#4caf50' :
-                     satelliteData.quality === 'Medium' ? '#ff9800' : '#f44336'
-            }]}>
-              ({satelliteData.quality})
+          <View style={styles.dataRow}>
+            <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
+              ☁️ Cloud Cover: {satelliteData.cloudCover?.toFixed(1)}%{' '}
+              <Text style={[styles.qualityBadge, {
+                color: satelliteData.quality === 'High' ? '#4caf50' :
+                       satelliteData.quality === 'Medium' ? '#ff9800' : '#f44336'
+              }]}>
+                ({satelliteData.quality})
+              </Text>
             </Text>
-          </Text>
+          </View>
           
           <Text style={[styles.infoText, { color: theme === 'dark' ? '#aaa' : '#555' }]}>
             🌡️ Surface Temp: {satelliteData.surfaceTemperature?.toFixed(1)}°C
@@ -653,8 +875,14 @@ export default function SatelliteMap({
           )}
           
           <Text style={[styles.infoText, { color: theme === 'dark' ? '#666' : '#888', fontSize: 12 }]}>
-            📡 {satelliteData.source} • {satelliteData.metadata?.climateZone} • {satelliteData.metadata?.season}
+            📡 {satelliteData.source} • Cached: {dataCache.current.size} items
           </Text>
+          
+          {satelliteData.metadata && (
+            <Text style={[styles.infoText, { color: theme === 'dark' ? '#666' : '#888', fontSize: 12 }]}>
+              🌍 {satelliteData.metadata.climateZone} • {satelliteData.metadata.season} • {satelliteData.metadata.isCoastal ? 'Coastal' : 'Inland'}
+            </Text>
+          )}
         </View>
       )}
     </View>

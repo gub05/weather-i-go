@@ -4,30 +4,17 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Configure resolver for native modules and CSS
+// Simplified resolver configuration for better Android performance
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === '@google/earthengine') {
-    // Force the resolver to use the server-side build of the library
-    return context.resolveRequest(context, '@google/earthengine/build/server', platform);
-  }
-  
-  // Handle lightningcss native module issues
-  if (moduleName.includes('lightningcss') && moduleName.includes('.node')) {
-    try {
-      return context.resolveRequest(context, moduleName, platform);
-    } catch (error) {
-      // If native module can't be resolved, skip it for web platform
-      if (platform === 'web') {
-        return { type: 'empty' };
-      }
-      throw error;
-    }
-  }
-  
-  // Exclude react-native-maps and native modules from web builds
+  // Handle web-specific exclusions only
   if (platform === 'web') {
     if (moduleName.startsWith('react-native-maps') ||
         moduleName.includes('react-native/Libraries/Utilities/codegenNativeCommands')) {
+      return { type: 'empty' };
+    }
+    
+    // Handle lightningcss native module issues on web
+    if (moduleName.includes('lightningcss') && moduleName.includes('.node')) {
       return { type: 'empty' };
     }
   }
@@ -36,7 +23,31 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   return context.resolveRequest(context, moduleName, platform);
 };
 
-// Ensure CSS modules work properly
+// Optimize for Android performance
 config.resolver.platforms = ['ios', 'android', 'web'];
+
+// Android-specific optimizations
+config.transformer = {
+  ...config.transformer,
+  // Reduce bundle size for Android
+  minifierConfig: {
+    mangle: {
+      keep_fnames: true,
+    },
+    output: {
+      ascii_only: true,
+      quote_keys: true,
+      wrap_iife: true,
+    },
+    sourceMap: {
+      includeSources: false,
+    },
+    toplevel: false,
+    warnings: false,
+  },
+};
+
+// Load environment variables
+require('dotenv').config();
 
 module.exports = config;

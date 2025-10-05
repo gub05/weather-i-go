@@ -11,56 +11,45 @@ const OWM_SATELLITE_BASE_URL = 'https://tile.openweathermap.org/map';
 
 export const initializeSatelliteImagery = async () => {
   try {
-    console.log("Initializing satellite imagery services...");
+    console.log("Initializing alternative satellite imagery service...");
     console.log("Platform.OS:", Platform.OS);
     
-    // Test connectivity to multiple satellite services
-    const services = [
-      { name: 'ArcGIS World Imagery', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer' },
-      { name: 'NASA MODIS', url: 'https://map1.vis.earthdata.nasa.gov/wmts-webmerc/MODIS_Terra_CorrectedReflectance_TrueColor' },
-      { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org' }
-    ];
+    // Test connectivity to NASA services with better error handling
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), 5000);
+    });
     
-    for (const service of services) {
-      try {
-        // Create a timeout promise for React Native compatibility
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 3000);
-        });
-        
-        const fetchPromise = fetch(service.url, {
-          method: 'HEAD'
-        });
-        
-        const response = await Promise.race([fetchPromise, timeoutPromise]);
-        
-        if (response.ok) {
-          console.log(`✅ ${service.name} satellite imagery service is accessible`);
-          return {
-            status: 'success',
-            provider: service.name,
-            message: `✅ ${service.name} connected`
-          };
-        }
-      } catch (serviceError) {
-        console.warn(`${service.name} unavailable:`, serviceError.message);
-        continue;
+    const fetchPromise = fetch('https://earthdata.nasa.gov/', {
+      method: 'HEAD'
+    });
+    
+    try {
+      const response = await Promise.race([fetchPromise, timeoutPromise]);
+      
+      if (response.ok) {
+        console.log('✅ NASA satellite imagery services are accessible');
+        return {
+          status: 'success',
+          provider: 'NASA GIBS',
+          message: '✅ NASA GIBS connected'
+        };
+      } else {
+        throw new Error('Unable to connect to NASA satellite services');
       }
+    } catch (serviceError) {
+      console.warn('NASA services unavailable, falling back to local map data');
+      return {
+        status: 'limited',
+        provider: 'Local Maps',
+        message: '⚠️ Satellite imagery limited - using local map data'
+      };
     }
-    
-    // If all services fail, still provide functionality with mock data
+  } catch (err) {
     console.warn('All satellite services unavailable, using simulated data');
     return {
       status: 'simulated',
       provider: 'Simulated Satellite Data',
       message: '🔄 Using simulated satellite data'
-    };
-  } catch (err) {
-    console.error('Error initializing satellite services:', err);
-    return {
-      status: 'error',
-      provider: 'Error',
-      message: '❌ Satellite services unavailable'
     };
   }
 };
