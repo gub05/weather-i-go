@@ -31,6 +31,7 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [favorabilityResult, setFavorabilityResult] = useState(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -46,6 +47,31 @@ export default function ExploreScreen() {
   const convertCelsius = (v, toUnit) =>
     toUnit === "F" ? (v * 9) / 5 + 32 : toUnit === "K" ? v + 273.15 : v;
   const displayValue = (v) => `${convertCelsius(v, unit).toFixed(1)}°${unit}`;
+
+  const checkFavorability = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        location: location || "San Francisco",
+        date: selectedDate || new Date().toISOString().split('T')[0],
+        desiredTemp: temperatureRange[0].toString(),
+        desiredCondition: selectedWeather || "sunny",
+        desiredHumidity: "50"
+      });
+      
+      const response = await fetch(`http://127.0.0.1:3001/api/weather/explain?${params}`);
+      const result = await response.json();
+      setFavorabilityResult(result);
+    } catch (error) {
+      console.error('Error checking favorability:', error);
+      setFavorabilityResult({ 
+        aiExplanation: "Error connecting to backend. Please try again.",
+        aiComparison: null 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const saveEvent = async () => {
     try {
@@ -73,8 +99,7 @@ export default function ExploreScreen() {
 
   const handleCalculate = () => {
     setFavorModal(true);
-    setLoading(true);
-    setTimeout(() => setLoading(false), 1500);
+    checkFavorability();
   };
 
   const handleLocationSelect = (latitude, longitude) => {
@@ -571,10 +596,24 @@ export default function ExploreScreen() {
                     color: theme === "dark" ? "#aaa" : "#555",
                     textAlign: "center",
                     marginBottom: 16,
+                    paddingHorizontal: 16,
                   }}
                 >
-                  Your friend’s backend will send the calculated result here.
+                  {favorabilityResult?.aiExplanation || "Loading weather analysis..."}
                 </Text>
+                {favorabilityResult?.aiComparison && (
+                  <Text
+                    style={{
+                      color: theme === "dark" ? "#aaa" : "#555",
+                      textAlign: "center",
+                      marginBottom: 16,
+                      paddingHorizontal: 16,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    Comparison: {favorabilityResult.aiComparison}
+                  </Text>
+                )}
                 <TouchableOpacity
                   onPress={() => setFavorModal(false)}
                   style={{

@@ -12,16 +12,49 @@ const RAIN_PARAM = "PRECTOT"; // Daily Total Precipitation
 const WIND_PARAM = "WS2M";    // Daily Mean 2 Meter Wind Speed
 
 /**
- * Mock Geocoding (replace with a real API later)
+ * Real Geocoding using OpenStreetMap Nominatim API (free, no API key required)
  */
 async function geologicalLocation(locationName) {
-  console.warn(`[Geocoding] Using mock coordinates for: ${locationName}`);
-
-  if (locationName.toLowerCase().includes("san francisco")) {
-    return { lat: 37.7749, lon: -122.4194 };
+  console.log(`🌍 Geocoding location: ${locationName}`);
+  
+  try {
+    // Use OpenStreetMap Nominatim API for geocoding
+    const encodedLocation = encodeURIComponent(locationName);
+    const geocodingUrl = `https://nominatim.openstreetmap.org/search?q=${encodedLocation}&format=json&limit=1`;
+    
+    console.log(`🔍 Fetching coordinates from: ${geocodingUrl}`);
+    
+    const response = await fetch(geocodingUrl, {
+      headers: {
+        'User-Agent': 'WeatherApp/1.0' // Required by Nominatim
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Geocoding API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data && data.length > 0) {
+      const result = data[0];
+      const coords = {
+        lat: parseFloat(result.lat),
+        lon: parseFloat(result.lon)
+      };
+      
+      console.log(`✅ Found coordinates for ${locationName}:`, coords);
+      return coords;
+    } else {
+      console.warn(`⚠️ No coordinates found for: ${locationName}, using fallback`);
+      return { lat: 40.7128, lon: -74.006 }; // fallback (NYC)
+    }
+    
+  } catch (error) {
+    console.error(`❌ Geocoding error for ${locationName}:`, error.message);
+    console.warn(`⚠️ Using fallback coordinates for: ${locationName}`);
+    return { lat: 40.7128, lon: -74.006 }; // fallback (NYC)
   }
-
-  return { lat: 40.7128, lon: -74.006 }; // fallback (NYC)
 }
 
 /**
